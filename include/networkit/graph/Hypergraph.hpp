@@ -321,6 +321,12 @@ public:
     // TODO: add doc string
     bool hasEdge(edgeid eid) const { return eid < maxEdgeId && edgeExists[eid]; };
 
+    const std::set<edgeid>& getNodeIncidence(node u) const {
+        return nodeIncidence[u]; };
+
+    const std::set<node>& getEdgeIncidence(edgeid e) const {
+        return edgeIncidence[e]; };
+
     /* ITERATORS */
 
     /**

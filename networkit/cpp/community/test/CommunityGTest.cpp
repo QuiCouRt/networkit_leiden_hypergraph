@@ -28,6 +28,7 @@
 #include <networkit/community/LFM.hpp>
 #include <networkit/community/LPDegreeOrdered.hpp>
 #include <networkit/community/Modularity.hpp>
+#include <networkit/community/ModularityHypergraph.hpp>
 #include <networkit/community/NMIDistance.hpp>
 #include <networkit/community/NodeStructuralRandMeasure.hpp>
 #include <networkit/community/OverlappingNMIDistance.hpp>
@@ -45,6 +46,7 @@
 #include <networkit/generators/ErdosRenyiGenerator.hpp>
 #include <networkit/generators/LFRGenerator.hpp>
 #include <networkit/graph/GraphTools.hpp>
+#include <networkit/graph/Hypergraph.hpp>
 #include <networkit/io/METISGraphReader.hpp>
 #include <networkit/overlap/HashingOverlapper.hpp>
 #include <networkit/scd/LocalTightnessExpansion.hpp>
@@ -55,6 +57,42 @@
 namespace NetworKit {
 
 class CommunityGTest : public testing::Test {};
+
+TEST_F(CommunityGTest, testIsaline) {
+    Aux::Log::setLogLevel("INFO");
+    //INFO("HelloWorld",G.numberOfNodes());
+    //for (auto& i : (G.edgeIncidence)) {
+    //    INFO("HelloWorld",i);
+    //}
+
+        // Création d'un exemple d'hypergraphe
+    bool weighted = false; // graphe non pondéré
+
+    Hypergraph hg(5, 3, weighted);
+
+    // Ajout d'arêtes à l'hypergraphe
+    std::vector<node> nodes1 = {0, 1, 2};
+    hg.addEdge(nodes1, 1.0, true);
+
+    std::vector<node> nodes2 = {2, 3};
+    hg.addEdge(nodes2, 1.0, true);
+
+    std::vector<node> nodes3 = {1, 4};
+    hg.addEdge(nodes3, 1.0, true);
+
+    for (edgeid e = 0; e < 3; ++e) {
+        std::cout << "Edge " << e ;
+        std::cout << "Incidences: ";
+    for (const auto& n : hg.edgeIncidence[e]) {
+        std::cout << n << " ";
+    }
+    std::cout << "\n";
+}
+    //int m = hg.numberOfEdges();
+    for (edgeid eid = 0; eid < hg.numberOfEdges(); ++eid) {
+        ASSERT_TRUE(hg.edgeExists[eid]);
+    }
+}
 
 TEST_F(CommunityGTest, testLabelPropagationOnUniformGraph) {
     ErdosRenyiGenerator graphGen(100, 0.2);

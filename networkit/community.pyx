@@ -496,6 +496,29 @@ cdef class EdgeCut:
 		"""
 		return self._this.getQuality(zeta._this, G._this)
 
+cdef extern from "<networkit/community/ModularityHypergraph.hpp>":
+
+	cdef cppclass _ModularityHypergraph "NetworKit::ModularityHypergraph":
+		_ModularityHypergraph() except +
+
+
+cdef class ModularityHypergraph:
+	"""	
+	Modularity()
+
+	Modularity is a quality index for community detection.
+	It assigns a quality value in [-0.5, 1.0] to a partition of a graph which is higher for more modular networks and
+	partitions which better capture the modular structure. See also http://en.wikipedia.org/wiki/Modularity_(networks) .
+
+ 	Notes
+	-----
+	Modularity is defined as:
+
+	.. math:: mod(\zeta) := \\frac{\sum_{C \in \zeta} \sum_{ e \in E(C) } \omega(e)}{\sum_{e \in E} \omega(e)} - \\frac{ \sum_{C \in \zeta}( \sum_{v \in C} \omega(v) )^2 }{4( \sum_{e \in E} \omega(e) )^2 }
+
+	"""
+	cdef _ModularityHypergraph _this
+
 
 cdef extern from "<networkit/community/Modularity.hpp>":
 
@@ -726,6 +749,34 @@ cdef class ParallelLeiden(CommunityDetector):
 	def __cinit__(self, Graph G not None, int iterations = 3, bool_t randomize = True, double gamma = 1):
 		self._G = G
 		self._this = new _ParallelLeiden(G._this,iterations,randomize,gamma)
+
+cdef extern from "<networkit/community/HypergraphLeiden.hpp>":
+
+	cdef cppclass _HypergraphLeiden "NetworKit::HypergraphLeiden"(_CommunityDetectionAlgorithm):
+		_HypergraphLeiden(_Graph _G) except +
+		_HypergraphLeiden(_Graph _G, int iterations, bool_t randomize, double gamma) except +
+
+cdef class HypergraphLeiden(CommunityDetector):
+	""" 
+	HypergraphLeiden(G, randomize=True, iterations=3, gamma=1)
+
+	Leiden Algorithm for Hypergraph.
+
+	Parameters
+	----------
+	G : networkit.Graph
+		A graph.
+	randomize : bool, optional
+		Whether to randomize the node order or not. Default: True
+	iterations : int, optional
+		Maximum count of Leiden runs. Default: 3
+	gamma : float, optional
+		Multi-resolution modularity parameter: 1.0 (standard modularity), 0.0 (one community), 2m (singleton communities). Default: 1.0
+	"""
+
+	def __cinit__(self, Graph G not None, int iterations = 3, bool_t randomize = True, double gamma = 1):
+		self._G = G
+		self._this = new _HypergraphLeiden(G._this,iterations,randomize,gamma)
 
 cdef extern from "<networkit/community/LouvainMapEquation.hpp>":
 	cdef cppclass _LouvainMapEquation "NetworKit::LouvainMapEquation"(_CommunityDetectionAlgorithm):
