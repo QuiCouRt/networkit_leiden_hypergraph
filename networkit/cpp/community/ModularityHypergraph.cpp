@@ -26,16 +26,24 @@ double ModularityHypergraph::getQualityHypergraph(const Partition &zeta, const H
     assert(G.numberOfNodes() <= zeta.numberOfElements());
     double cov = 0.0;
     if (type_contribution==0) {// >>> STRICT EDGE CONTRIBUTION
-    
-        std::vector<double> intraEdgeWeight(zeta.upperBound(), 0.0); // vector of edge inside each community
+  
         double intraEdgeWeightSum = 0.0; // sum of all intra weight inside each comminuty
-        
         double totalEdgeWeight = 0.0; // add edge weigh
+
+        //For loop to obtain the max size edge
+        int d= 0;
+        for (edgeid eid = 0; eid < G.upperEdgeIdBound(); ++eid) {
+            if (G.getEdgeIncidence(eid).size()>d){
+                d=G.getEdgeIncidence(eid).size();
+            }
+        }
+
+        std::vector<double> EdgeSizeWeight(d+1, 0.0); // vector of sum of edges of size i (i=0 to d)
 
 
 #ifdef DEBUG
         if (!G.getEdgeIncidence(0).empty()) {
-            ERROR("First edge =error");
+            ERROR("First edge error");
         }
 #endif
 
@@ -43,7 +51,7 @@ double ModularityHypergraph::getQualityHypergraph(const Partition &zeta, const H
         // compute intra-cluster edge weights per cluster
         bool isFirst=true;
         bool edgeBelongs=true;
-        index c,d;
+        index c, c_prime;
         for (edgeid eid = 0; eid < G.upperEdgeIdBound(); ++eid) {
             isFirst=true;
             edgeBelongs=true;
@@ -53,23 +61,22 @@ double ModularityHypergraph::getQualityHypergraph(const Partition &zeta, const H
                     c = zeta[nid];
                     isFirst=false;
                 }
-                d = zeta[nid];
-                if (c!=d){
+                c_prime = zeta[nid];
+                if (c!=c_prime){
                     edgeBelongs=false;
                     break;
                 }
             }
-        
+            double w = G.getEdgeWeight(eid);
             if (edgeBelongs){
-                intraEdgeWeight[d] += eid;
-                intraEdgeWeightSum += G.getEdgeWeight(eid);
+                intraEdgeWeightSum += w;
             }
-
-            totalEdgeWeight+=G.getEdgeWeight(eid);
+            EdgeSizeWeight[G.getEdgeIncidence(eid).size()] += w;
+            totalEdgeWeight+= w;
         }
 
         cov = intraEdgeWeightSum / totalEdgeWeight;
-
+        cov = EdgeSizeWeight[2];
 
 /*
     Coverage coverage;

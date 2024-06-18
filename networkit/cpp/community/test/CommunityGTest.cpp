@@ -80,6 +80,9 @@ TEST_F(CommunityGTest, testIsaline) {
     std::vector<node> nodes3 = {1, 4};
     hg.addEdge(nodes3, 5.0, true);
 
+    std::vector<node> nodes4 = {2, 4};
+    hg.addEdge(nodes4, 3.0, true);
+
     for (edgeid eid = 0; eid < hg.upperEdgeIdBound(); ++eid) {
         ASSERT_TRUE(hg.getEdgeExists(eid));
     }
@@ -92,7 +95,7 @@ TEST_F(CommunityGTest, testIsaline) {
     p.mergeSubsets(p[1], p[4]);
     ModularityHypergraph modularityHypergraph;
     double mod = modularityHypergraph.getQualityHypergraph(p, hg, 0);
-    ASSERT_TRUE(mod == 0.9);
+    ASSERT_TRUE(mod == 8.0);
     auto members = p.getMembers(p[0]);
     std::vector<index> membersControl = {0, 1, 2, 4};
     index i = 0;
