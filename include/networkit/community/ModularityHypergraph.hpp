@@ -10,7 +10,7 @@
 #ifndef NETWORKIT_COMMUNITY_MODULARITY_HYPERGRAPH_HPP_
 #define NETWORKIT_COMMUNITY_MODULARITY_HYPERGRAPH_HPP_
 
-#include <networkit/community/QualityMeasure.hpp>
+#include <networkit/community/QualityMeasureHypergraph.hpp>
 #include <networkit/graph/Hypergraph.hpp>
 
 namespace NetworKit {
@@ -28,7 +28,7 @@ namespace NetworKit {
  * \\frac{ \\sum_{C \\in \\zeta}( \\sum_{v \\in C} \\omega(v) )^2 }{4( \\sum_{e \\in E} \\omega(e)
  * )^2 }$$
  */
-class ModularityHypergraph final : public QualityMeasure {
+class ModularityHypergraph final : public QualityMeasureHypergraph {
 
 private:
     double gTotalEdgeWeight;

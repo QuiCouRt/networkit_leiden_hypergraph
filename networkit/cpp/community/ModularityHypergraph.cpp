@@ -16,7 +16,7 @@
 
 namespace NetworKit {
 
-ModularityHypergraph::ModularityHypergraph() : QualityMeasure(), gTotalEdgeWeight(0.0) {}
+ModularityHypergraph::ModularityHypergraph() : QualityMeasureHypergraph(), gTotalEdgeWeight(0.0) {}
 
 void ModularityHypergraph::setTotalEdgeWeight(double totalEdgeWeight) {
     gTotalEdgeWeight = totalEdgeWeight;
@@ -24,35 +24,53 @@ void ModularityHypergraph::setTotalEdgeWeight(double totalEdgeWeight) {
 
 double ModularityHypergraph::getQualityHypergraph(const Partition &zeta, const Hypergraph &G, int type_contribution) {
     assert(G.numberOfNodes() <= zeta.numberOfElements());
-
-    if (type_contribution==0) {
+    double cov = 0.0;
+    if (type_contribution==0) {// >>> STRICT EDGE CONTRIBUTION
     
-    Aux::Log::setLogLevel("INFO");
-    //INFO("HelloWorld",G.numberOfNodes());
-    //for (auto& i : (G.edgeIncidence)) {
-    //    INFO("HelloWorld",i);
-    //}
-
-        // Création d'un exemple d'hypergraphe
-    bool weighted = false; // graphe non pondéré
-
-    Hypergraph hg(5, 3, weighted);
-
-    // Ajout d'arêtes à l'hypergraphe
-    std::vector<node> nodes1 = {0, 1, 2};
-    hg.addEdge(nodes1, 1.0, true);
-
-    std::vector<node> nodes2 = {2, 3};
-    hg.addEdge(nodes2, 1.0, true);
-
-    std::vector<node> nodes3 = {1, 4};
-    hg.addEdge(nodes3, 1.0, true);
+        std::vector<double> intraEdgeWeight(zeta.upperBound(), 0.0); // vector of edge inside each community
+        double intraEdgeWeightSum = 0.0; // sum of all intra weight inside each comminuty
+        
+        double totalEdgeWeight = 0.0; // add edge weigh
 
 
-    //int m = hg.numberOfEdges();
-    for (edgeid eid = 0; eid < hg.numberOfEdges(); ++eid) {
-        INFO("HelloWorld",eid);
-    }
+#ifdef DEBUG
+        if (!G.getEdgeIncidence(0).empty()) {
+            ERROR("First edge =error");
+        }
+#endif
+
+
+        // compute intra-cluster edge weights per cluster
+        bool isFirst=true;
+        bool edgeBelongs=true;
+        index c,d;
+        for (edgeid eid = 0; eid < G.upperEdgeIdBound(); ++eid) {
+            isFirst=true;
+            edgeBelongs=true;
+
+            for (auto nid: G.getEdgeIncidence(eid)) {
+                if(isFirst){
+                    c = zeta[nid];
+                    isFirst=false;
+                }
+                d = zeta[nid];
+                if (c!=d){
+                    edgeBelongs=false;
+                    break;
+                }
+            }
+        
+            if (edgeBelongs){
+                intraEdgeWeight[d] += eid;
+                intraEdgeWeightSum += G.getEdgeWeight(eid);
+            }
+
+            totalEdgeWeight+=G.getEdgeWeight(eid);
+        }
+
+        cov = intraEdgeWeightSum / totalEdgeWeight;
+
+
 /*
     Coverage coverage;
     // deprecated: intraEdgeWeightSum / gTotalEdgeWeight;
@@ -90,7 +108,8 @@ double ModularityHypergraph::getQualityHypergraph(const Partition &zeta, const H
     expCov = 0.0;
 
 #pragma omp parallel for reduction(+ : expCov)
-    for (omp_index c = static_cast<omp_index>(zeta.lowerBound());
+    for (omp_index c = static_cast<omp_index>(zeta.lowe/isaline/Bureau/testFolder/Stage_2024_Hypergraph/code/networkit/include/networkit/community/QualityMeasure.hpp:23:20: note:     ‘virtual double NetworKit::QualityMeasure::getQuality(const NetworKit::Partition&, const NetworKit::Graph&)’
+[build]    23 |     virtual double getQuality(const Partition &zeta, const Graph &G) = 0rBound());
          c < static_cast<omp_index>(zeta.upperBound()); ++c) {
         // squared
         expCov +=
@@ -119,7 +138,7 @@ double ModularityHypergraph::getQualityHypergraph(const Partition &zeta, const H
     return modularity;
     */
 }
-
+    return cov;
 }// End if for strict edge contribution : type_contribution == 0 
 
 } /* namespace NetworKit */

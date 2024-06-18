@@ -59,39 +59,51 @@ namespace NetworKit {
 class CommunityGTest : public testing::Test {};
 
 TEST_F(CommunityGTest, testIsaline) {
-    Aux::Log::setLogLevel("INFO");
+    //Aux::Log::setLogLevel("DEBUG");
     //INFO("HelloWorld",G.numberOfNodes());
     //for (auto& i : (G.edgeIncidence)) {
     //    INFO("HelloWorld",i);
     //}
 
         // Création d'un exemple d'hypergraphe
-    bool weighted = false; // graphe non pondéré
+    bool weighted = true; // graphe non pondéré
 
     Hypergraph hg(5, 3, weighted);
 
     // Ajout d'arêtes à l'hypergraphe
     std::vector<node> nodes1 = {0, 1, 2};
-    hg.addEdge(nodes1, 1.0, true);
+    hg.addEdge(nodes1, 4.0, true);
 
-    std::vector<node> nodes2 = {2, 3};
+    std::vector<node> nodes2 = {0, 1, 2, 3};
     hg.addEdge(nodes2, 1.0, true);
 
     std::vector<node> nodes3 = {1, 4};
-    hg.addEdge(nodes3, 1.0, true);
+    hg.addEdge(nodes3, 5.0, true);
 
-    for (edgeid e = 0; e < 3; ++e) {
-        std::cout << "Edge " << e ;
-        std::cout << "Incidences: ";
-    for (const auto& n : hg.edgeIncidence[e]) {
-        std::cout << n << " ";
+    for (edgeid eid = 0; eid < hg.upperEdgeIdBound(); ++eid) {
+        ASSERT_TRUE(hg.getEdgeExists(eid));
     }
-    std::cout << "\n";
-}
-    //int m = hg.numberOfEdges();
-    for (edgeid eid = 0; eid < hg.numberOfEdges(); ++eid) {
-        ASSERT_TRUE(hg.edgeExists[eid]);
+
+    Partition p(hg.numberOfNodes());
+    p.allToSingletons();
+    p.mergeSubsets(p[0], p[1]);
+    //p.mergeSubsets(p[2], p[3]);
+    p.mergeSubsets(p[1], p[2]);
+    p.mergeSubsets(p[1], p[4]);
+    ModularityHypergraph modularityHypergraph;
+    double mod = modularityHypergraph.getQualityHypergraph(p, hg, 0);
+    ASSERT_TRUE(mod == 0.9);
+    auto members = p.getMembers(p[0]);
+    std::vector<index> membersControl = {0, 1, 2, 4};
+    index i = 0;
+    for (auto it = members.begin(); it != members.end(); it++) {
+        EXPECT_EQ(*it, membersControl[i]);
+        i++;
     }
+    
+    //EXPECT_GE(1.0, mod) << "valid modularity values are in [-0.5, 1]";
+    //EXPECT_LE(-0.5, mod) << "valid modularity values are in [-0.5, 1]";
+
 }
 
 TEST_F(CommunityGTest, testLabelPropagationOnUniformGraph) {

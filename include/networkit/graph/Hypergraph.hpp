@@ -327,6 +327,10 @@ public:
     const std::set<node>& getEdgeIncidence(edgeid e) const {
         return edgeIncidence[e]; };
 
+    bool getNodeExists(node u) const { return nodeExists[u];}
+
+    bool getEdgeExists(edgeid e) const { return edgeExists[e];}
+
     /* ITERATORS */
 
     /**
