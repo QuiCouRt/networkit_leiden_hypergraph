@@ -95,7 +95,7 @@ TEST_F(CommunityGTest, testIsaline) {
     p.mergeSubsets(p[1], p[4]);
     ModularityHypergraph modularityHypergraph;
     double mod = modularityHypergraph.getQualityHypergraph(p, hg, 0);
-    ASSERT_TRUE(mod == 8.0);
+    ASSERT_TRUE(mod == 1.0);
     auto members = p.getMembers(p[0]);
     std::vector<index> membersControl = {0, 1, 2, 4};
     index i = 0;

@@ -25,8 +25,13 @@ void ModularityHypergraph::setTotalEdgeWeight(double totalEdgeWeight) {
 double ModularityHypergraph::getQualityHypergraph(const Partition &zeta, const Hypergraph &G, int type_contribution) {
     assert(G.numberOfNodes() <= zeta.numberOfElements());
     double cov = 0.0;
+    double expCov = 0.0;
+    double modularity =0.0; // mod = coverage - expected coverage
+
     if (type_contribution==0) {// >>> STRICT EDGE CONTRIBUTION
-  
+
+        // Firstly, we compute the coverage : 
+
         double intraEdgeWeightSum = 0.0; // sum of all intra weight inside each comminuty
         double totalEdgeWeight = 0.0; // add edge weigh
 
@@ -76,7 +81,11 @@ double ModularityHypergraph::getQualityHypergraph(const Partition &zeta, const H
         }
 
         cov = intraEdgeWeightSum / totalEdgeWeight;
-        cov = EdgeSizeWeight[2];
+
+
+        // Secondly, we compute the expected coverage : 
+
+        
 
 /*
     Coverage coverage;
@@ -145,7 +154,7 @@ double ModularityHypergraph::getQualityHypergraph(const Partition &zeta, const H
     return modularity;
     */
 }
-    return cov;
+    return modularity;
 }// End if for strict edge contribution : type_contribution == 0 
 
 } /* namespace NetworKit */
