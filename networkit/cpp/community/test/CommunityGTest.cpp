@@ -59,46 +59,53 @@ namespace NetworKit {
 class CommunityGTest : public testing::Test {};
 
 TEST_F(CommunityGTest, testIsaline) {
-    //Aux::Log::setLogLevel("DEBUG");
-    //INFO("HelloWorld",G.numberOfNodes());
-    //for (auto& i : (G.edgeIncidence)) {
-    //    INFO("HelloWorld",i);
-    //}
-
-        // Création d'un exemple d'hypergraphe
-    bool weighted = true; // graphe non pondéré
-
+    // Hypergraph creation : 
+    bool weighted = true; 
     Hypergraph hg(5, 3, weighted);
-
-    // Ajout d'arêtes à l'hypergraphe
     std::vector<node> edge1 = {0, 1, 2};
     hg.addEdge(edge1, 4.0, true);
-
     std::vector<node> edge2 = {0, 1, 2, 3};
     hg.addEdge(edge2, 1.0, true);
-
     std::vector<node> edge3 = {1, 4};
     hg.addEdge(edge3, 5.0, true);
 
-
-    for (edgeid eid = 0; eid < hg.upperEdgeIdBound(); ++eid) {
-        ASSERT_TRUE(hg.getEdgeExists(eid));
-    }
-
+    // We partition our hypergraph
     Partition p(hg.numberOfNodes());
     p.allToSingletons();
     p.mergeSubsets(p[0], p[1]);
-    //p.mergeSubsets(p[2], p[3]);
     p.mergeSubsets(p[1], p[2]);
     p.mergeSubsets(p[1], p[4]);
+
+    // Test modularity value for strict edge contribution
     ModularityHypergraph modularityHypergraph;
     double mod = modularityHypergraph.getQualityHypergraph(p, hg, 0);
     DEBUG("modularity: ", mod);
-    EXPECT_GE(-0.004, mod) << "valid modularity values are < 0.906";
-    EXPECT_LE(-0.005, mod) << "valid modularity values are in > 0.9";
+    EXPECT_GE(-0.004, mod) << "modularity value is < -0.004";
+    EXPECT_LE(-0.005, mod) << "modularity value is > -0.005";
     ASSERT_TRUE(mod == 0.9 - 2065805. / 2284880.0);
+
+    // Test modularity value for majority edge contribution
+    mod = modularityHypergraph.getQualityHypergraph(p, hg, 1);
+    DEBUG("modularity: ", mod);
+    EXPECT_GE(0.038, mod) << "modularity value is < 0.038";
+    EXPECT_LE(0.037, mod) << "modularity value is > 0.037";
+    ASSERT_TRUE(mod == 1- 2198505.0/2284880.0);
     
-    /*auto members = p.getMembers(p[0]);
+    //Testing the value of the modularity gain from moving nodes 0 and 2 into the community of 3
+    std::vector<node> S{0,2};
+    double gain = modularityHypergraph.deltaModularityHypergraph(p, hg, S, p[3], 0);
+    DEBUG("modularity gain: ", gain);
+    EXPECT_GE(0.038, gain) << "modularity gain value is < 0.906";
+    EXPECT_LE(-0.037, gain) << "modularity gain value is > 0.9";
+    ASSERT_TRUE(gain == 0.0);
+
+
+    /*Aux::Log::setLogLevel("DEBUG");
+    INFO("HelloWorld",G.numberOfNodes());
+    for (auto& i : (G.edgeIncidence)) {
+        INFO("HelloWorld",i);
+    }
+    auto members = p.getMembers(p[0]);
     std::vector<index> membersControl = {0, 1, 2, 4};
     index i = 0;
     for (auto it = members.begin(); it != members.end(); it++) {

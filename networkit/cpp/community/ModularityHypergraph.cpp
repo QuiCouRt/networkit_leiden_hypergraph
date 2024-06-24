@@ -142,10 +142,16 @@ double ModularityHypergraph::getQualityHypergraph(const Partition &zeta, const H
         index c, c_prime;
         for (edgeid eid = 0; eid < G.upperEdgeIdBound(); ++eid) {
             isFirst=true;
-            edgeBelongs=true;
+            edgeBelongs=false;
             // an edge belongs to a community if the majority of its nodes belongs to the same community 
+            std::vector<double> CommEdge(zeta.upperBound(), 0.0);
             for (auto nid: G.getEdgeIncidence(eid)) {
-                // TODO max occurrence  >? d/2 = G.getEdgeIncidence(eid).size() / 2 (diision entiere si tu veux)
+                CommEdge[zeta[nid]]++;
+            }
+            for (auto v: CommEdge) {
+                if (v >= int(G.getEdgeIncidence(eid).size()/ 2. +1)){
+                    edgeBelongs=true;
+                }
             }
             double w = G.getEdgeWeight(eid);
             if (edgeBelongs){
@@ -159,7 +165,6 @@ double ModularityHypergraph::getQualityHypergraph(const Partition &zeta, const H
 
 
         //>>> Secondly, we compute the expected coverage : 
-
         std::set<std::set<index>> subsets =zeta.getSubsets(); //obtain all partition 
         std::vector<double> intraVolume(zeta.upperBound(), 0.0);
         double volume=0.0;
@@ -187,11 +192,10 @@ double ModularityHypergraph::getQualityHypergraph(const Partition &zeta, const H
         // Compute expCov : \sum_d \frac{|E_d|}{vol(V)^d} \sum_{i= \frac{d}{2} +1}^{d}  \binom{d}{i} \sum_{c \in C} (vol(c))^i (vol(V)- vol(c))^{d-i}
         for (double j=0 ; j < d+1; j++){
             sum=0.0;
-            for (i= (j / 2) + 1; i <= j; i++){
+            for (i= int ((j / 2.) + 1); i <= j; i++){
                 sum_vol=0.0;
-                //TODO !!!
                 for (double c=0; c < zeta.upperBound(); c++){
-                    sum_vol += pow(intraVolume[i],j);
+                    sum_vol += pow(intraVolume[c],i)* pow(volume - intraVolume[c], j-i);
                 }
                 sum_vol= BinomialCoefficient(j,i)* sum_vol;
                 sum += sum_vol;
@@ -201,9 +205,14 @@ double ModularityHypergraph::getQualityHypergraph(const Partition &zeta, const H
 
         expCov = expCov / totalEdgeWeight; 
         
-        modularity = cov - expCov;
+        modularity =  cov - expCov;
     }
     return modularity;
+}
+
+double ModularityHypergraph::deltaModularityHypergraph(const Partition &zeta, const Hypergraph &G, std::vector<node> S, index c, int type_contribution) {
+    double gainModularity =0.0;
+    return gainModularity;
 }
 
 } /* namespace NetworKit */
