@@ -42,11 +42,11 @@ double ModularityHypergraph::getQualityHypergraph(const Partition &zeta, const H
 
     //For loop to obtain the max size edge
     double d= 0;
-    for (edgeid eid = 0; eid < G.upperEdgeIdBound(); ++eid) {
+    G.forEdges([&](edgeid eid, edgeweight ew){
         if (G.getEdgeIncidence(eid).size()>d){
             d=G.getEdgeIncidence(eid).size();
         }
-    }
+    });
 
     if (type_contribution==0) {// >>>>> STRICT EDGE CONTRIBUTION
 
@@ -64,7 +64,7 @@ double ModularityHypergraph::getQualityHypergraph(const Partition &zeta, const H
         bool isFirst=true;
         bool edgeBelongs=true;
         index c, c_prime;
-        for (edgeid eid = 0; eid < G.upperEdgeIdBound(); ++eid) {
+        G.forEdges([&](edgeid eid, edgeweight ew) {
             isFirst=true;
             edgeBelongs=true;
             // an edge belongs to a community if all nodes in this edge belong to the same community 
@@ -79,13 +79,12 @@ double ModularityHypergraph::getQualityHypergraph(const Partition &zeta, const H
                     break;
                 }
             }
-            double w = G.getEdgeWeight(eid);
             if (edgeBelongs){
-                intraEdgeWeightSum += w;
+                intraEdgeWeightSum += ew;
             }
-            EdgeSizeWeight[G.getEdgeIncidence(eid).size()] += w;
-            totalEdgeWeight+= w;
-        }
+            EdgeSizeWeight[G.getEdgeIncidence(eid).size()] += ew;
+            totalEdgeWeight+= ew;
+        });
         cov = intraEdgeWeightSum / totalEdgeWeight;
 
         // >>> Secondly, we compute the expected coverage : 
@@ -140,7 +139,7 @@ double ModularityHypergraph::getQualityHypergraph(const Partition &zeta, const H
         bool isFirst=true;
         bool edgeBelongs=true;
         index c, c_prime;
-        for (edgeid eid = 0; eid < G.upperEdgeIdBound(); ++eid) {
+        G.forEdges([&](edgeid eid, edgeweight ew) {
             isFirst=true;
             edgeBelongs=false;
             // an edge belongs to a community if the majority of its nodes belongs to the same community 
@@ -153,13 +152,12 @@ double ModularityHypergraph::getQualityHypergraph(const Partition &zeta, const H
                     edgeBelongs=true;
                 }
             }
-            double w = G.getEdgeWeight(eid);
             if (edgeBelongs){
-                intraEdgeWeightSum += w;
+                intraEdgeWeightSum += ew;
             }
-            EdgeSizeWeight[G.getEdgeIncidence(eid).size()] += w;
-            totalEdgeWeight+= w;
-        }
+            EdgeSizeWeight[G.getEdgeIncidence(eid).size()] += ew;
+            totalEdgeWeight+= ew;
+        });
 
         cov = intraEdgeWeightSum / totalEdgeWeight;
 
@@ -210,9 +208,177 @@ double ModularityHypergraph::getQualityHypergraph(const Partition &zeta, const H
     return modularity;
 }
 
-double ModularityHypergraph::deltaModularityHypergraph(const Partition &zeta, const Hypergraph &G, std::vector<node> S, index c, int type_contribution) {
-    double gainModularity =0.0;
-    return gainModularity;
+
+
+double ModularityHypergraph::deltaModularityHypergraph(const Partition &zeta, const Hypergraph &G, std::set<node> S, index target_c, int type_contribution) {
+    double modularityGain =0.0; // modularityGain = covGain - expCovGain
+    double covGain =0.0;
+    double expCovGain = 0.0;
+
+    //Compute volume of all hypergraph
+    double volume = 0.0;
+    G.forNodes([&](node nid, nodeweight nw) {
+        for (edgeid eid: G.getNodeIncidence(nid)){
+            volume+=G.getEdgeWeight(eid);
+        }
+    });
+
+    //For loop to obtain the max size edge
+    double d= 0;
+    for (edgeid eid = 0; eid < G.upperEdgeIdBound(); ++eid) {
+        if (G.getEdgeIncidence(eid).size()>d){
+            d=G.getEdgeIncidence(eid).size();
+        }
+    }
+
+    std::vector<double> EdgeSizeWeight(d+1, 0.0); // vector of sum of weight of edges of size i (i=0 to d)
+    double totalEdgeWeight = 0.0; // add all edge weights
+    G.forEdges([&](edgeid eid, edgeweight ew) {
+        EdgeSizeWeight[G.getEdgeIncidence(eid).size()] += ew;
+        totalEdgeWeight += ew;
+    });
+
+    //To calculate expCovGain, I need 3 different volumes
+    // The volume of the old community c of nodes of S including the nodes of S   (All S nodes belong to the same community)
+    index c= zeta[*S.begin()];
+    double vol_c=0.0;
+    std::set<node> set_c;
+    set_c = zeta.getMembers(c);
+    for (node nid : set_c){
+        for (edgeid eid: G.getNodeIncidence(nid)){
+            vol_c +=G.getEdgeWeight(eid);
+        }
+    }
+
+    //The volume of S
+    double vol_S=0.0;
+    for (node nid : S){
+        for (edgeid eid: G.getNodeIncidence(nid)){
+            vol_S +=G.getEdgeWeight(eid);
+        }
+    }
+
+    //The volume of target community without the nodes of S
+    double vol_target_c=0.0;
+    std::set<node> set_target_c;
+    set_target_c = zeta.getMembers(target_c);
+    for (node nid : set_target_c){
+        for (edgeid eid: G.getNodeIncidence(nid)){
+            vol_target_c +=G.getEdgeWeight(eid);
+        }
+    }
+
+
+    if (type_contribution==0) {// >>>>> STRICT EDGE CONTRIBUTION
+        //covGain = \frac{In_w(S,c')-In_w(S,c)}{|E|_w} 
+        //with $In_w(A,B) = \sum_{e \in E ~:~ e \nsubseteq A ~ \wedge ~ e \nsubseteq B ~ \wedge ~ e \subseteq A \cup B} w_e$
+        double in_c_S = 0.0;
+        double in_target_c_S = 0.0;
+        bool edgeBelongs_c=true;
+        bool edgeBelongs_target_c=true;
+        std::set<edgeid> border_edge;
+        for (node n : S){
+            for (edgeid eid: G.getNodeIncidence(n)){
+                border_edge.insert(eid);
+            }
+        }
+
+        for (edgeid eid: border_edge){
+            edgeBelongs_c =false;
+            for (node nid: G.getEdgeIncidence(eid)){
+                if (!edgeBelongs_c && (S.find(nid) == S.end())){ // eid is not strictly included in S, so it's possible to take eid into account
+                    edgeBelongs_c = true;
+                }
+                if (zeta[nid] !=c){
+                    edgeBelongs_c = false;
+                    break; 
+                }
+            }
+            if (edgeBelongs_c){
+                in_c_S +=G.getEdgeWeight(eid);
+            }
+                
+            edgeBelongs_target_c=false;
+            for (node nid: G.getEdgeIncidence(eid)){
+                if (!edgeBelongs_target_c && (S.find(nid) == S.end())){ // eid is not strictly included in S, so it's possible to take eid into account
+                    edgeBelongs_target_c = true;
+                }
+                if (zeta[nid] !=target_c && (S.find(nid) == S.end())){
+                    edgeBelongs_target_c = false;
+                    break; 
+                }
+            }
+            if (edgeBelongs_target_c){
+                in_target_c_S +=G.getEdgeWeight(eid);
+            }
+        }
+        covGain = (in_target_c_S - in_c_S) / totalEdgeWeight;
+
+        //expCovGain = \sum_{d\geq 2} \frac{|E_d|_w}{|E|_w vol_w(V)^d}(vol_w(c'+S)^d -vol_w(c')^d -vol_w(c)^d + vol_w(c-S)^d)
+        for (double j=0 ; j < d+1; j++){
+            expCovGain += (EdgeSizeWeight[j] / (totalEdgeWeight * pow(volume,j))) * ( pow(vol_target_c + vol_S,j)-pow(vol_target_c,j)  - pow(vol_c,j) + pow(vol_c - vol_S,j));
+        }
+    }
+
+
+    if (type_contribution==1) {// >>>>> MAJORITY EDGE CONTRIBUTION
+        // covGain = \frac{In(S,c')-In(S,c)}{|E|} 
+        // with In_w(A,B) = \sum_{e \in E ~:~ e \nsubseteq_{maj} A ~ \wedge ~ e \nsubseteq_{maj} B ~ \wedge ~ e \subseteq_{maj} A \cup B} w_e
+        double in_c_S = 0.0;
+        double in_target_c_S = 0.0;
+        bool edgeBelongs_c=true;
+        bool edgeBelongs_target_c=true;
+        std::set<edgeid> border_edge;
+        for (node n : S){
+            for (edgeid eid: G.getNodeIncidence(n)){
+                border_edge.insert(eid);
+            }
+        }
+
+        for (edgeid eid: border_edge){
+            edgeBelongs_c =false;
+            edgeBelongs_target_c=false;
+            std::vector<double> CommEdge(3, 0.0);
+            for (node nid: G.getEdgeIncidence(eid)){
+                if (zeta[nid]==c){CommEdge[0]++;}
+                if (zeta[nid]==target_c){CommEdge[1]++;}
+                if (S.find(nid) != S.end()){CommEdge[2]++;}
+            }
+                
+            if (!(CommEdge[1] >= int(G.getEdgeIncidence(eid).size()/ 2. +1)) && !(CommEdge[0]- CommEdge[2] >= int(G.getEdgeIncidence(eid).size()/ 2. +1)) ){
+                if (CommEdge[0] >= int(G.getEdgeIncidence(eid).size()/ 2. +1)){
+                    edgeBelongs_c =true;
+                }
+                if (CommEdge[1] + CommEdge[2] >= int(G.getEdgeIncidence(eid).size()/ 2. +1)){
+                    edgeBelongs_target_c =true;
+                }
+            }
+            
+            if (edgeBelongs_c){
+                in_c_S +=G.getEdgeWeight(eid);
+            }
+
+            if (edgeBelongs_target_c){
+                in_target_c_S +=G.getEdgeWeight(eid);
+            }
+        }
+        covGain = (in_target_c_S - in_c_S) / totalEdgeWeight;
+
+
+        // expCovGain = \sum_{d\geq 2} \frac{|E_d|}{|E| vol(V)^d} \sum_{i=\frac{d}{2}+1}^{d} \binom{d}{i} (vol(c'+S)^i(vol(V)-vol(c'+S))^{d-i} -vol(c')^i(vol(V)-vol(c'))^{d-i} -vol(c)^i(vol(V)-vol(c))^{d-i} + vol(c-S)^i(vol(V)-vol(c-S))^{d-i})
+        double sum = 0.0;
+        for (double j=0 ; j < d+1; j++){
+            sum = 0.0;
+            for (double i= int ((j / 2.) + 1); i <= j; i++){
+                sum += BinomialCoefficient(j,i) *(pow(vol_target_c + vol_S,i)*pow(volume - vol_target_c - vol_S,j-i) -  pow(vol_target_c,i)*pow(volume - vol_target_c,j-i) - pow(vol_c ,i)*pow(volume - vol_c,j-i) + pow(vol_c - vol_S,i)*pow(volume - vol_c + vol_S,j-i));
+            }
+            expCovGain += (EdgeSizeWeight[j] / (totalEdgeWeight * pow(volume,j))) * sum;
+        }
+    } 
+
+    modularityGain= covGain - expCovGain; 
+
+    return modularityGain;
 }
 
 } /* namespace NetworKit */

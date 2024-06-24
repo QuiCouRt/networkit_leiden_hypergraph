@@ -21,7 +21,7 @@ class QualityMeasureHypergraph {
 
 public:
     virtual double getQualityHypergraph(const Partition &zeta, const Hypergraph &G, int type_contribution) = 0;
-    virtual double deltaModularityHypergraph(const Partition &zeta, const Hypergraph &G, std::vector<node> S, index c, int type_contribution) = 0;
+    virtual double deltaModularityHypergraph(const Partition &zeta, const Hypergraph &G, std::set<node> S, index c, int type_contribution) = 0;
 };
 
 } /* namespace NetworKit */

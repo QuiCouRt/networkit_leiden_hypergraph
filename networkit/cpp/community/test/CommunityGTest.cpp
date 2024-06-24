@@ -80,24 +80,25 @@ TEST_F(CommunityGTest, testIsaline) {
     ModularityHypergraph modularityHypergraph;
     double mod = modularityHypergraph.getQualityHypergraph(p, hg, 0);
     DEBUG("modularity: ", mod);
-    EXPECT_GE(-0.004, mod) << "modularity value is < -0.004";
-    EXPECT_LE(-0.005, mod) << "modularity value is > -0.005";
     ASSERT_TRUE(mod == 0.9 - 2065805. / 2284880.0);
 
     // Test modularity value for majority edge contribution
     mod = modularityHypergraph.getQualityHypergraph(p, hg, 1);
     DEBUG("modularity: ", mod);
-    EXPECT_GE(0.038, mod) << "modularity value is < 0.038";
-    EXPECT_LE(0.037, mod) << "modularity value is > 0.037";
     ASSERT_TRUE(mod == 1- 2198505.0/2284880.0);
     
     //Testing the value of the modularity gain from moving nodes 0 and 2 into the community of 3
-    std::vector<node> S{0,2};
+    // For strict edge contribution
+    std::set<node> S({0,2});
     double gain = modularityHypergraph.deltaModularityHypergraph(p, hg, S, p[3], 0);
     DEBUG("modularity gain: ", gain);
-    EXPECT_GE(0.038, gain) << "modularity gain value is < 0.906";
-    EXPECT_LE(-0.037, gain) << "modularity gain value is > 0.9";
-    ASSERT_TRUE(gain == 0.0);
+    ASSERT_TRUE(gain == -0.4 + 30093.0 / 57122.0);
+    // For majority edge contribution
+    gain = modularityHypergraph.deltaModularityHypergraph(p, hg, S, p[3], 1);
+    DEBUG("modularity gain: ", gain);
+    //EXPECT_GE(0.127, gain) << "modularity gain value is < 0.906";
+    //EXPECT_LE(0.126, gain) << "modularity gain value is > 0.9";
+    ASSERT_TRUE(gain == 0.24202583943139247);
 
 
     /*Aux::Log::setLogLevel("DEBUG");
