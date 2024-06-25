@@ -10,6 +10,7 @@
 
 #include <networkit/base/Algorithm.hpp>
 #include <networkit/graph/Graph.hpp>
+#include <networkit/graph/Hypergraph.hpp>
 #include <networkit/structures/Partition.hpp>
 
 namespace NetworKit {
@@ -26,6 +27,13 @@ public:
      * @param[in] G input graph
      */
     CommunityDetectionAlgorithm(const Graph &G);
+
+    /**
+     * A community detection algorithm operates on a hypergraph, so the constructor expects a hypergraph.
+     *
+     * @param[in] G input hypergraph
+     */
+    CommunityDetectionAlgorithm(const Hypergraph &HG);
 
     /**
      * A community detection algorithm operates on a graph, so the constructor expects a graph.
@@ -51,6 +59,7 @@ public:
 
 protected:
     const Graph *G;
+    const Hypergraph *HG;
     Partition result;
 };
 

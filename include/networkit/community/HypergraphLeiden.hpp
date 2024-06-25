@@ -36,26 +36,25 @@ class HypergraphLeiden final : public CommunityDetectionAlgorithm {
 public:
     /**
      *
-     * @param graph A networkit graph
+     * @param graph A networkit hypergraph
      * @param iterations Number of Leiden Iterations to be run
      * @param randomize Randomize node order?
      * @param gamma Resolution parameter
      */
-    explicit HypergraphLeiden(const Graph &graph, int iterations = 3, bool randomize = true,
-                            double gamma = 1);
+    HypergraphLeiden(const Hypergraph &graph, int iterations = 3, bool randomize = true, double gamma = 1);
 
     void run() override;
 
     int VECTOR_OVERSIZE = 10000;
 
 private:
-    inline double modularityDelta(double cutD, double degreeV, double volD) const {
+    /*inline double modularityDelta(double cutD, double degreeV, double volD) const {
         return cutD - gamma * degreeV * volD * inverseGraphVolume;
     };
 
     inline double modularityThreshold(double cutC, double volC, double degreeV) const {
         return cutC - gamma * (volC - degreeV) * degreeV * inverseGraphVolume;
-    }
+    }*/
 
     static inline void lockLowerFirst(index a, index b, std::vector<std::mutex> &locks) {
         if (a < b) {
@@ -67,13 +66,13 @@ private:
         }
     }
 
-    void flattenPartition();
+    void flattenPartitionHypergraph();
 
-    void calculateVolumes(const Graph &graph);
+    void calculateVolumesHypergraph(const Hypergraph &graph);
 
-    void parallelMove(const Graph &graph);
+    void parallelMoveHypergraph(const Hypergraph &graph);
 
-    Partition parallelRefine(const Graph &graph);
+    Partition parallelRefineHypergraph(const Hypergraph &graph);
 
     double inverseGraphVolume; // 1/vol(V)
 

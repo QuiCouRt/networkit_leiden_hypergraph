@@ -17,6 +17,9 @@ CommunityDetectionAlgorithm::CommunityDetectionAlgorithm(const Graph &G)
     }
 }
 
+CommunityDetectionAlgorithm::CommunityDetectionAlgorithm(const Hypergraph &HG)
+    : Algorithm(), HG(&HG), result(0) {}
+
 CommunityDetectionAlgorithm::CommunityDetectionAlgorithm(const Graph &G, Partition baseClustering)
     : Algorithm(), G(&G), result(std::move(baseClustering)) {}
 
