@@ -291,6 +291,8 @@ public:
     template <typename Callback>
     void forEntries(Callback func) const;
 
+    index giveOne(index s) const;
+
     /**
      * Iterate over all entries (node, cluster id) in parallel and execute callback function @a
      * handle (lambda closure).

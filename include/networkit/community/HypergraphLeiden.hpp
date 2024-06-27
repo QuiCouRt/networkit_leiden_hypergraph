@@ -41,7 +41,7 @@ public:
      * @param randomize Randomize node order?
      * @param gamma Resolution parameter
      */
-    HypergraphLeiden(const Hypergraph &graph, int iterations = 3, bool randomize = true, double gamma = 1);
+    HypergraphLeiden(const Hypergraph &graph, int iterations = 3, bool randomize = true, double gamma = 1, int type_contribution = 1);
 
     void run() override;
 
@@ -66,23 +66,30 @@ private:
         }
     }
 
-    void flattenPartitionHypergraph();
-
     void calculateVolumesHypergraph(const Hypergraph &graph);
 
-    void parallelMoveHypergraph(const Hypergraph &graph);
+    void parallelMoveHypergraph(const Hypergraph &graph, const Partition &zeta);
+
+    double deltaModHypergraph(const Hypergraph &graph, const Partition &zeta, index S, index c, index target_c);
 
     Partition parallelRefineHypergraph(const Hypergraph &graph);
 
-    double inverseGraphVolume; // 1/vol(V)
+    double GraphVolume; // vol(V)
 
-    std::vector<double> communityVolumes;
+    std::vector<double> communityVolumes_1; //volume of each community 
+    std::vector<double> communityVolumes_2;
 
-    std::vector<std::vector<node>> mappings;
+    int d; //max size of hyperedge
+
+    std::vector<double> EdgeSizeWeight; // vector of sum of weight of edges of size i (i=0 to d)
+
+    double totalEdgeWeight;
 
     static constexpr int WORKING_SIZE = 1000;
 
     double gamma; // Resolution parameter
+
+    int type_contribution;
 
     bool changed;
 
@@ -91,6 +98,9 @@ private:
     Aux::SignalHandler handler;
 
     bool random;
+
+    std::vector<std::set<index>> NeighborComm;
+
 };
 
 } // namespace NetworKit
