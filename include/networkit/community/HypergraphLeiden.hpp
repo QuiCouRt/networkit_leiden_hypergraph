@@ -41,7 +41,7 @@ public:
      * @param randomize Randomize node order?
      * @param gamma Resolution parameter
      */
-    HypergraphLeiden(const Hypergraph &graph, int iterations = 3, bool randomize = true, double gamma = 1, int type_contribution = 1);
+    HypergraphLeiden(const Hypergraph &graph, int iterations = 3, bool randomize = false, double gamma = 1, int type_contribution = 1);
 
     void run() override;
 
@@ -100,6 +100,8 @@ private:
     bool random;
 
     std::vector<std::set<index>> NeighborComm;
+
+    int step=0.0;
 
 };
 

@@ -41,6 +41,7 @@
 #include <networkit/community/SampledGraphStructuralRandMeasure.hpp>
 #include <networkit/community/SampledNodeStructuralRandMeasure.hpp>
 #include <networkit/community/StablePartitionNodes.hpp>
+#include <networkit/community/HypergraphLeiden.hpp>
 #include <networkit/generators/ClusteredRandomGraphGenerator.hpp>
 #include <networkit/generators/DynamicBarabasiAlbertGenerator.hpp>
 #include <networkit/generators/ErdosRenyiGenerator.hpp>
@@ -57,6 +58,93 @@
 namespace NetworKit {
 
 class CommunityGTest : public testing::Test {};
+
+TEST_F(CommunityGTest, testIsaline_Greedy_Move_Leiden) {
+    // Hypergraph creation : 
+    bool weighted = true; 
+    Hypergraph hg(6, 7, weighted);
+    std::vector<node> edge1 = {0, 1, 2};
+    hg.addEdge(edge1, 3.0, true);
+    std::vector<node> edge2 = {0, 2};
+    hg.addEdge(edge2, 1.0, true);
+    std::vector<node> edge3 = {1, 2};
+    hg.addEdge(edge3, 1.0, true);
+    std::vector<node> edge4 = {2, 3};
+    hg.addEdge(edge4, 1.0, true);
+    std::vector<node> edge5 = {3, 5};
+    hg.addEdge(edge5, 1.0, true);
+    std::vector<node> edge6 = {4, 5};
+    hg.addEdge(edge6, 1.0, true);
+    std::vector<node> edge7 = {3, 4, 5};
+    hg.addEdge(edge7, 3.0, true);
+
+    Partition p(hg.numberOfNodes());
+    p.allToSingletons();
+    p.mergeSubsets(p[0], p[2]);
+    p.mergeSubsets(p[4], p[5]);
+    ModularityHypergraph modularityHypergraph;
+    double mod_p = modularityHypergraph.getQualityHypergraph(p, hg, 1);
+    EXPECT_LE(mod_p, -0.5);
+    std::set<node> R({1});
+    double gain = modularityHypergraph.deltaModularityHypergraph(p, hg, R, p[2], 1);
+    EXPECT_LE(gain, -0.5);
+    p.mergeSubsets(p[1], p[2]);
+    mod_p = modularityHypergraph.getQualityHypergraph(p, hg, 1);
+    EXPECT_LE(mod_p, -0.5);
+    p.mergeSubsets(p[3], p[5]);
+    mod_p = modularityHypergraph.getQualityHypergraph(p, hg, 1);
+    EXPECT_LE(mod_p, -0.5);
+    //std::set<node> R({3});
+    //double gain = modularityHypergraph.deltaModularityHypergraph(p, hg, R, p[2], 1);
+    //mod_p = modularityHypergraph.getQualityHypergraph(p, hg, 1);
+    //EXPECT_LE(gain, -0.5);
+
+    Partition q(hg.numberOfNodes());
+    q.allToSingletons();
+    q.mergeSubsets(q[0], q[2]);
+    q.mergeSubsets(q[2], q[1]);
+    q.mergeSubsets(q[4], q[5]);
+    //q.mergeSubsets(q[0], q[2]);
+    //q.mergeSubsets(q[2], q[3]);
+    Partition t(hg.numberOfNodes());
+    t.allToSingletons();
+    t.mergeSubsets(t[0], t[2]);
+    t.mergeSubsets(t[0], t[3]);
+    t.mergeSubsets(t[4], t[5]);
+    mod_p = modularityHypergraph.getQualityHypergraph(p, hg, 1);
+    double mod_q = modularityHypergraph.getQualityHypergraph(q, hg, 1);
+    double mod_t = modularityHypergraph.getQualityHypergraph(t, hg, 1);
+    //double gain = modularityHypergraph.deltaModularityHypergraph(p, hg, R, p[2], 1);
+    //EXPECT_LE(mod_p, gain);
+    EXPECT_LE(mod_q, 0);
+
+    /*Partition w(hg.numberOfNodes());
+    w.allToSingletons();
+    std::set<node> S({0});
+    w.mergeSubsets(w[0], w[2]);
+    double mod_w_1 = modularityHypergraph.getQualityHypergraph(w, hg, 1);
+    double gain_5 = modularityHypergraph.deltaModularityHypergraph(w, hg, R, w[2], 1);
+    w.mergeSubsets(w[1], w[2]);
+    double mod_w_2 = modularityHypergraph.getQualityHypergraph(w, hg, 1);
+    EXPECT_GE(mod_w_1+ gain_5,mod_w_2) << "please";
+    */
+    HypergraphLeiden pl(hg);
+    pl.run();
+    Partition zeta = pl.getPartition();
+    //double mod_zeta = modularityHypergraph.getQualityHypergraph(zeta, hg, 1);
+
+    //DEBUG("number of clusters: ", zeta.numberOfSubsets());
+    for (int nid =0 ; nid < 6; nid ++) {
+      EXPECT_LE(10, zeta[nid]) << nid ;
+    }
+
+    //EXPECT_LE(10, zeta[5]) << 5;
+    //ASSERT_TRUE(zeta[2]!=zeta[3]);
+    //EXPECT_LE(3, zeta.numberOfSubsets()) << "nomber of comm < 3 ";
+    //EXPECT_LE(mod_zeta, mod_p);
+    //DEBUG("modularity: ", modularityHypergraph.getQualityHypergraph(zeta, hg, 1););
+    //EXPECT_TRUE(GraphClusteringTools::isProperClustering(hg, zeta));*/
+}
 
 TEST_F(CommunityGTest, testIsaline_Modularity_Hypergraph) {
     // Hypergraph creation : 
@@ -86,7 +174,6 @@ TEST_F(CommunityGTest, testIsaline_Modularity_Hypergraph) {
     double mod_1 = modularityHypergraph.getQualityHypergraph(p, hg, 1);
     DEBUG("modularity: ", mod_1);
     ASSERT_TRUE(mod_1 == 1- 2198505.0/2284880.0);
-    
     //Testing the value of the modularity gain from moving nodes 0 and 2 into the community of 3
     // For strict edge contribution
     std::set<node> S({0,2});

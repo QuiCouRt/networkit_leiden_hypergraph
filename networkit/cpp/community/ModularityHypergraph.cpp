@@ -201,8 +201,7 @@ double ModularityHypergraph::getQualityHypergraph(const Partition &zeta, const H
             expCov += (EdgeSizeWeight[j] / pow(volume,j)) * sum;
         }
 
-        expCov = expCov / totalEdgeWeight; 
-        
+        expCov = expCov / totalEdgeWeight;
         modularity =  cov - expCov;
     }
     return modularity;
@@ -375,7 +374,9 @@ double ModularityHypergraph::deltaModularityHypergraph(const Partition &zeta, co
             expCovGain += (EdgeSizeWeight[j] / (totalEdgeWeight * pow(volume,j))) * sum;
         }
     } 
-
+    /*Aux::Log::setLogLevel("DEBUG");
+    INFO("true mod comp ", covGain); 
+    INFO("minus ", expCovGain);*/
     modularityGain= covGain - expCovGain; 
 
     return modularityGain;
