@@ -78,26 +78,6 @@ TEST_F(CommunityGTest, testIsaline_Greedy_Move_Leiden) {
     std::vector<node> edge7 = {3, 4, 5};
     hg.addEdge(edge7, 3.0, true);
 
-    Partition p(hg.numberOfNodes());
-    p.allToSingletons();
-    p.mergeSubsets(p[0], p[2]);
-    p.mergeSubsets(p[4], p[5]);
-    ModularityHypergraph modularityHypergraph;
-    double mod_p = modularityHypergraph.getQualityHypergraph(p, hg, 1);
-    EXPECT_LE(mod_p, -0.5);
-    std::set<node> R({1});
-    double gain = modularityHypergraph.deltaModularityHypergraph(p, hg, R, p[2], 1);
-    EXPECT_LE(gain, -0.5);
-    p.mergeSubsets(p[1], p[2]);
-    mod_p = modularityHypergraph.getQualityHypergraph(p, hg, 1);
-    EXPECT_LE(mod_p, -0.5);
-    p.mergeSubsets(p[3], p[5]);
-    mod_p = modularityHypergraph.getQualityHypergraph(p, hg, 1);
-    EXPECT_LE(mod_p, -0.5);
-    //std::set<node> R({3});
-    //double gain = modularityHypergraph.deltaModularityHypergraph(p, hg, R, p[2], 1);
-    //mod_p = modularityHypergraph.getQualityHypergraph(p, hg, 1);
-    //EXPECT_LE(gain, -0.5);
 
     Partition q(hg.numberOfNodes());
     q.allToSingletons();
@@ -111,39 +91,21 @@ TEST_F(CommunityGTest, testIsaline_Greedy_Move_Leiden) {
     t.mergeSubsets(t[0], t[2]);
     t.mergeSubsets(t[0], t[3]);
     t.mergeSubsets(t[4], t[5]);
-    mod_p = modularityHypergraph.getQualityHypergraph(p, hg, 1);
+    ModularityHypergraph modularityHypergraph;
     double mod_q = modularityHypergraph.getQualityHypergraph(q, hg, 1);
     double mod_t = modularityHypergraph.getQualityHypergraph(t, hg, 1);
-    //double gain = modularityHypergraph.deltaModularityHypergraph(p, hg, R, p[2], 1);
-    //EXPECT_LE(mod_p, gain);
-    EXPECT_LE(mod_q, 0);
 
-    /*Partition w(hg.numberOfNodes());
-    w.allToSingletons();
-    std::set<node> S({0});
-    w.mergeSubsets(w[0], w[2]);
-    double mod_w_1 = modularityHypergraph.getQualityHypergraph(w, hg, 1);
-    double gain_5 = modularityHypergraph.deltaModularityHypergraph(w, hg, R, w[2], 1);
-    w.mergeSubsets(w[1], w[2]);
-    double mod_w_2 = modularityHypergraph.getQualityHypergraph(w, hg, 1);
-    EXPECT_GE(mod_w_1+ gain_5,mod_w_2) << "please";
-    */
     HypergraphLeiden pl(hg);
     pl.run();
     Partition zeta = pl.getPartition();
-    //double mod_zeta = modularityHypergraph.getQualityHypergraph(zeta, hg, 1);
+    double mod_zeta = modularityHypergraph.getQualityHypergraph(zeta, hg, 1);
 
-    //DEBUG("number of clusters: ", zeta.numberOfSubsets());
-    for (int nid =0 ; nid < 6; nid ++) {
-      EXPECT_LE(10, zeta[nid]) << nid ;
-    }
-
-    //EXPECT_LE(10, zeta[5]) << 5;
-    //ASSERT_TRUE(zeta[2]!=zeta[3]);
-    //EXPECT_LE(3, zeta.numberOfSubsets()) << "nomber of comm < 3 ";
-    //EXPECT_LE(mod_zeta, mod_p);
-    //DEBUG("modularity: ", modularityHypergraph.getQualityHypergraph(zeta, hg, 1););
-    //EXPECT_TRUE(GraphClusteringTools::isProperClustering(hg, zeta));*/
+    ASSERT_TRUE(zeta[0]==2);
+    ASSERT_TRUE(zeta[1]==1);
+    ASSERT_TRUE(zeta[2]==2);
+    ASSERT_TRUE(zeta[3]==3);
+    ASSERT_TRUE(zeta[4]==5);
+    ASSERT_TRUE(zeta[5]==5);
 }
 
 TEST_F(CommunityGTest, testIsaline_Modularity_Hypergraph) {
@@ -198,21 +160,6 @@ TEST_F(CommunityGTest, testIsaline_Modularity_Hypergraph) {
     ASSERT_TRUE(mod_prime_1 == mod_1 + gain_1);
     double mod_prime_0 = modularityHypergraph.getQualityHypergraph(q, hg, 0);
     ASSERT_TRUE(mod_prime_0 == mod_0 + gain_0 );
-
-
-    /*Aux::Log::setLogLevel("DEBUG");
-    INFO("HelloWorld",G.numberOfNodes());
-    for (auto& i : (G.edgeIncidence)) {
-        INFO("HelloWorld",i);
-    }
-    auto members = p.getMembers(p[0]);
-    std::vector<index> membersControl = {0, 1, 2, 4};
-    index i = 0;
-    for (auto it = members.begin(); it != members.end(); it++) {
-        EXPECT_EQ(*it, membersControl[i]);
-        i++;
-    }
-    */
 }
 
 TEST_F(CommunityGTest, testLabelPropagationOnUniformGraph) {

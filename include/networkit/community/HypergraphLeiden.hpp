@@ -41,7 +41,7 @@ public:
      * @param randomize Randomize node order?
      * @param gamma Resolution parameter
      */
-    HypergraphLeiden(const Hypergraph &graph, int iterations = 3, bool randomize = false, double gamma = 1, int type_contribution = 1);
+    HypergraphLeiden(const Hypergraph &graph, int iterations = 3, bool randomize = false, double gamma = 1, int type_contribution = 1, double gamma_cut = 0.035);
 
     void run() override;
 
@@ -70,9 +70,11 @@ private:
 
     void parallelMoveHypergraph(const Hypergraph &graph, const Partition &zeta);
 
-    double deltaModHypergraph(const Hypergraph &graph, const Partition &zeta, index S, index c, index target_c);
+    double deltaModHypergraph(const Hypergraph &graph, const Partition &zeta, index S, const Partition &p, index c, index target_c);
 
-    Partition parallelRefineHypergraph(const Hypergraph &graph);
+    Partition parallelRefineHypergraph(const Hypergraph &graph,const Partition &zeta);
+
+    double HypergraphCut(const Hypergraph &graph, const Partition &zeta, index S);
 
     double GraphVolume; // vol(V)
 
@@ -88,6 +90,8 @@ private:
     static constexpr int WORKING_SIZE = 1000;
 
     double gamma; // Resolution parameter
+
+    double gamma_cut;
 
     int type_contribution;
 

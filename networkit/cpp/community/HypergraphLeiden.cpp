@@ -21,8 +21,8 @@ double BinomialCoef(const double n, const double k) {
 
 
 namespace NetworKit {
-HypergraphLeiden::HypergraphLeiden(const Hypergraph &graph, int iterations, bool randomize, double gamma, int type_contribution)
-    : CommunityDetectionAlgorithm(graph), gamma(gamma), numberOfIterations(iterations), random(randomize), type_contribution(type_contribution) {
+HypergraphLeiden::HypergraphLeiden(const Hypergraph &graph, int iterations, bool randomize, double gamma, int type_contribution, double gamma_cut)
+    : CommunityDetectionAlgorithm(graph), gamma(gamma), numberOfIterations(iterations), random(randomize), type_contribution(type_contribution), gamma_cut(gamma_cut) {
     this->result = Partition(graph.numberOfNodes());
     this->result.allToSingletons();
 }
@@ -61,13 +61,18 @@ void HypergraphLeiden::run() {
       }
     });
 
-    Partition refined;
+    Partition refined(zeta.upperBound());
+    refined= zeta;
     zeta = result;
-    //for (int i = 0; i < numberOfIterations; ++i) {
+    for (int i = 0; i < numberOfIterations; ++i) {
         calculateVolumesHypergraph(*currentGraph);
         parallelMoveHypergraph((*currentGraph), zeta);
-        zeta = result;
-        NeighborComm.resize(result.upperBound());
+        refined = parallelRefineHypergraph((*currentGraph), zeta);
+        result = refined;
+        if (zeta.numberOfSubsets() == refined.numberOfSubsets()) {
+          break;
+        }
+        zeta = refined;
         (*currentGraph).forNodes([&](node nid, nodeweight nw) {
           index c = zeta[nid];
           for (edgeid eid: (*currentGraph).getNodeIncidence(nid)){
@@ -76,35 +81,7 @@ void HypergraphLeiden::run() {
             }
           }
         });
-        step ++;
-        calculateVolumesHypergraph(*currentGraph);
-        parallelMoveHypergraph((*currentGraph), zeta);
-        zeta = result;
-        NeighborComm.resize(result.upperBound());
-        (*currentGraph).forNodes([&](node nid, nodeweight nw) {
-          index c = zeta[nid];
-          for (edgeid eid: (*currentGraph).getNodeIncidence(nid)){
-            for (node nid_prime: (*currentGraph).getEdgeIncidence(eid)){
-              NeighborComm[c].insert(zeta[nid_prime]);
-            }
-          }
-        });
-        calculateVolumesHypergraph(*currentGraph);
-        //parallelMoveHypergraph((*currentGraph), zeta);
-        zeta = result;
-        NeighborComm.resize(result.upperBound());
-        (*currentGraph).forNodes([&](node nid, nodeweight nw) {
-          index c = zeta[nid];
-          for (edgeid eid: (*currentGraph).getNodeIncidence(nid)){
-            for (node nid_prime: (*currentGraph).getEdgeIncidence(eid)){
-              NeighborComm[c].insert(zeta[nid_prime]);
-            }
-          }
-        });
-        calculateVolumesHypergraph(*currentGraph);
-        //parallelMoveHypergraph((*currentGraph), zeta);
-        //refined = parallelRefineHypergraph(*currentGraph);
-    //}
+    }
 
     //result = refined;
     hasRun = true;
@@ -137,7 +114,7 @@ void HypergraphLeiden::calculateVolumesHypergraph(const Hypergraph &graph){
   TRACE("Calculating Volumes took " + timer.elapsedTag());
 }
 
-double HypergraphLeiden::deltaModHypergraph(const Hypergraph &graph, const Partition &zeta, index S, index c, index target_c){
+double HypergraphLeiden::deltaModHypergraph(const Hypergraph &graph, const Partition &zeta, index S, const Partition &p,  index c, index target_c){
   double modularityGain =0.0; // modularityGain = covGain - expCovGain
   double covGain =0.0;
   double expCovGain = 0.0;
@@ -170,7 +147,7 @@ double HypergraphLeiden::deltaModHypergraph(const Hypergraph &graph, const Parti
         if (!edgeBelongs_c && zeta[nid]!=S){ // eid is not strictly included in S, so it's possible to take eid into account
           edgeBelongs_c = true;
         }
-        if (result[nid] !=c){
+        if (p[nid] !=c){
           edgeBelongs_c = false;
           break; 
         }
@@ -184,7 +161,7 @@ double HypergraphLeiden::deltaModHypergraph(const Hypergraph &graph, const Parti
         if (!edgeBelongs_target_c && zeta[nid]!=S){ // eid is not strictly included in S, so it's possible to take eid into account
           edgeBelongs_target_c = true;
         }
-        if (result[nid] !=target_c && zeta[nid]!=S){
+        if (p[nid] !=target_c && zeta[nid]!=S){
           edgeBelongs_target_c = false;
           break; 
         }
@@ -215,8 +192,8 @@ double HypergraphLeiden::deltaModHypergraph(const Hypergraph &graph, const Parti
       edgeBelongs_target_c=false;
       std::vector<double> CommEdge(3, 0.0);
       for (node nid: graph.getEdgeIncidence(eid)){
-        if (result[nid]==c){CommEdge[0]++;}
-        if (result[nid]==target_c){CommEdge[1]++;}
+        if (p[nid]==c){CommEdge[0]++;}
+        if (p[nid]==target_c){CommEdge[1]++;}
         if (zeta[nid]==S){CommEdge[2]++;}
       }
                 
@@ -252,7 +229,7 @@ double HypergraphLeiden::deltaModHypergraph(const Hypergraph &graph, const Parti
   } 
   
 
-  modularityGain= covGain - expCovGain; 
+  modularityGain= covGain - gamma * expCovGain; 
 
   return modularityGain;
 }
@@ -337,6 +314,8 @@ void HypergraphLeiden::parallelMoveHypergraph(const Hypergraph &graph, const Par
       double maxDelta = std::numeric_limits<double>::lowest();
       index bestCommunity = none;
       bool exit_best_com = false; 
+      Partition p(result.upperBound());
+      p=result;
       //double degree = 0;
         //for (auto z : pointers) {
         //    cutWeights[z] = 0;
@@ -346,14 +325,13 @@ void HypergraphLeiden::parallelMoveHypergraph(const Hypergraph &graph, const Par
         continue;
       }
       for (index neighborCommunity : NeighborComm[u]){
-        //TODO give-one
         node no = zeta.giveOne(neighborCommunity);
         if (no == std::numeric_limits<uint64_t>::max()){
           continue;
         }
         index target_comm = result[no];
         if (target_comm != current_comm) {
-          double delta = deltaModHypergraph(graph, zeta, u, current_comm, target_comm);
+          double delta = deltaModHypergraph(graph, zeta, u, result, current_comm, target_comm);
           if (delta > maxDelta) {
             maxDelta = delta;
             bestCommunity = target_comm;
@@ -442,137 +420,139 @@ void HypergraphLeiden::parallelMoveHypergraph(const Hypergraph &graph, const Par
   
 }
 
+double HypergraphLeiden::HypergraphCut(const Hypergraph &graph, const Partition &zeta, index S){
+  std::set<node> set_S = zeta.getMembers(S);
+  std::set<edgeid> border_edge;
+  index big_com = 0;
+  for (node n : set_S){
+    big_com = result[n];
+    for (edgeid eid: graph.getNodeIncidence(n)){
+      border_edge.insert(eid);
+    }
+  }
 
-Partition HypergraphLeiden::parallelRefineHypergraph(const Hypergraph &graph){
-  Partition refined(graph.numberOfNodes());
-    /*refined.allToSingletons();
-    DEBUG("Starting refinement with ", result.numberOfSubsets(), " partitions");
+  double cut=0.0;
+  for (edgeid eid: border_edge){
+    // 1/2 | E inter A U E inter B |
+    double i=0;
+    double j=0;
+    for (node nid: graph.getEdgeIncidence(eid)){
+      if (zeta[nid]!= S && result[nid]==big_com){
+        i++;
+      }
+      if (zeta[nid]== S){
+        j++;
+      }
+    }
+    double w =0;
+    if (i!= 0 && j!=0){
+      w = (i+j)/2.0; /// TODO other weight "-1"
+    }
+    cut += w;
+  }
 
-    std::vector<uint_fast8_t> singleton(refined.upperBound(), true);
-    std::vector<double> cutCtoSminusC(refined.upperBound());
-    std::vector<double> refinedVolumes(refined.upperBound()); // Community Volumes P_refined
-    std::vector<node> nodes(graph.upperNodeIdBound(), none);
+  return cut;
+}
 
-    std::vector<index> neighComms;
-    std::vector<double> cutWeights(refined.upperBound()); // cut from Node to Communities
-    auto &mt = Aux::Random::getURNG();
 
-    // Initialize nodes and calculate initial cut and volumes
-    for (node u = 0; u < graph.upperNodeIdBound(); u++) {
-        if (graph.hasNode(u)) {
-            nodes[u] = u;
-            graph.forNeighborsOf(u, [&](node neighbor, edgeweight ew) {
-                if (u != neighbor) {
-                    if (result[neighbor] == result[u]) {
-                        // Cut to communities in the refined partition that
-                        // are in the same community in the original partition
-                        cutCtoSminusC[u] += ew;
-                    }
-                } else {
-                    refinedVolumes[u] += ew;
-                }
-                refinedVolumes[u] += ew;
-            });
-        }
+Partition HypergraphLeiden::parallelRefineHypergraph(const Hypergraph &graph, const Partition &zeta){
+  // zeta partition corresponds to our block of nodes
+  // result give us the community obtained with the greedy move
+  Partition refined(zeta.upperBound());
+  refined = zeta;
+  DEBUG("Starting refinement with ", result.numberOfSubsets(), " partitions");
+
+  std::vector<index> singleton(refined.upperBound(), true);
+  std::vector<double> cutCtoSminusC(refined.upperBound());
+  std::vector<double> refinedVolumes(refined.upperBound()); // Community Volumes P_refined
+  refinedVolumes= communityVolumes_1;
+  std::vector<index> nodes_block(refined.upperBound(), none);
+
+  std::vector<index> neighComms;
+  std::vector<double> cutWeights(refined.upperBound()); // cut from Node to Communities
+  auto &mt = Aux::Random::getURNG();
+
+  // Initialize nodes and calculate initial cut and volumes
+  std::vector<std::set<edgeid>> border_edge(refined.upperBound());
+  zeta.parallelForEntries([&](index, index s) {
+    if (s != none) {
+      nodes_block[s]=s;
+      cutCtoSminusC[s]=HypergraphCut(graph, zeta, s);
+    }
+  });
+
+  // Optionally shuffle nodes if random is true
+  if (random) {
+    std::shuffle(nodes_block.begin(), nodes_block.end(), mt);
+  }
+
+  handler.assureRunning();
+
+  // Process each node sequentially
+  for (index u : nodes_block) {
+    if (u == none || !singleton[u]) { // only consider singletons
+      continue;
     }
 
-    // Optionally shuffle nodes if random is true
-    if (random) {
-        std::shuffle(nodes.begin(), nodes.end(), mt);
+    node no=zeta.giveOne(u);
+    if (no == std::numeric_limits<uint64_t>::max()){
+      continue;
+    }
+    index big_com = result[no];                // Node's community ID in the original partition (S)
+    index current_comm = refined[no];
+
+    if (cutCtoSminusC[u] < gamma_cut * communityVolumes_1[u] * (communityVolumes_2[big_com] - communityVolumes_1[u]) ) { // R-Set Condition  // initialy there is gamma of modularity (not gammacut) and time inverse of volume of V  //TODO
+      continue;
     }
 
-    handler.assureRunning();
+    if (NeighborComm[u].empty()){
+      continue;
+    }
+    double maxDelta = std::numeric_limits<double>::lowest();
+    index bestCommunity = none;
+    bool exit_best_com = false;
+    for (index neighborCommunity : NeighborComm[u]){
+      node noN= zeta.giveOne(neighborCommunity);
+      if (noN == std::numeric_limits<uint64_t>::max()){
+        continue;
+      }
 
-    // Process each node sequentially
-    for (node u : nodes) {
-        if (u == none || !singleton[u]) { // only consider singletons
-            continue;
+      index target_comm =  refined[noN];
+      index target_result_comm = result[noN]; 
+
+      if (target_comm != current_comm && target_result_comm == big_com) {
+        if (cutCtoSminusC[target_comm] >= gamma_cut * refinedVolumes[target_comm] * (communityVolumes_2[big_com] - refinedVolumes[target_comm]) ) {
+          double delta = deltaModHypergraph(graph, zeta, u, refined, current_comm, target_comm);
+          if (delta > maxDelta) {
+            maxDelta = delta;
+            bestCommunity = target_comm;
+            exit_best_com = true;
+          }
         }
-        index S = result[u];                // Node's community ID in the original partition (S)
-        for (auto neighComm : neighComms) { // Reset the clearlist : Set all cutweights to 0
-            if (neighComm != none)
-                cutWeights[neighComm] = 0;
-        }
-
-        neighComms.clear();
-
-        std::vector<node> criticalNodes;
-        double degree = 0;
-
-        graph.forNeighborsOf(u, [&](node neighbor, edgeweight ew) { // Calculate degree and cut
-            degree += ew;
-            if (neighbor != u) {
-                if (S == result[neighbor]) {
-                    index z = refined[neighbor];
-                    if (z == neighbor) {
-                        criticalNodes.push_back(neighbor);
-                    }
-                    if (cutWeights[z] == 0)
-                        neighComms.push_back(z); // Keep track of neighbor communities
-                    cutWeights[z] += ew;
-                }
-            } else {
-                degree += ew;
-            }
-        });
-
-        if (cutCtoSminusC[u] < this->gamma * degree * (communityVolumes[S] - degree) * inverseGraphVolume) { // R-Set Condition
-            continue;
-        }
-
-        if (cutWeights[u] != 0) { // Node has been moved -> not a singleton anymore. Stop.
-            continue;
-        }
-
-        double delta;
-        index bestC = none;
-        double bestDelta = std::numeric_limits<double>::lowest();
-
-        // Determine Community that yields highest modularity delta
-        for (unsigned int j = 0; j < neighComms.size(); j++) {
-            index C = neighComms[j];
-            if (C == none) {
-                continue;
-            }
-            delta = modularityDelta(cutWeights[C], degree, refinedVolumes[C]);
-
-            if (delta < 0) { // modThreshold is 0, since cutw(v,C-) = 0 and volw(C-) = 0
-                continue;
-            }
-
-            auto volC = refinedVolumes[C];
-            if (delta > bestDelta && cutCtoSminusC[C] >= this->gamma * volC * (communityVolumes[S] - volC) * inverseGraphVolume) { // T-Set Condition
-                bestDelta = delta;
-                bestC = C;
-            }
-        }
-
-        if (bestC == none) {
-            continue;
-        }
-
-        singleton[bestC] = false;
-        refined[u] = bestC;
-        refinedVolumes[bestC] += degree;
-
-        for (node &neighbor : criticalNodes) {
-            if (neighbor != none) {
-                index neighborCommunity = refined[neighbor];
-                if (neighborCommunity != neighbor) {
-                    if (cutWeights[neighborCommunity] == 0) {
-                        neighComms.push_back(neighborCommunity);
-                    }
-                    cutWeights[neighborCommunity] += cutWeights[neighbor];
-                    cutWeights[neighbor] = 0;
-                    neighbor = none;
-                }
-            }
-        }
-
-        cutCtoSminusC[bestC] += cutCtoSminusC[u] - 2 * cutWeights[bestC];
+      }
     }
 
-    DEBUG("Ending refinement with ", refined.numberOfSubsets(), " partitions");*/
+    Aux::Log::setLogLevel("DEBUG");
+    INFO("move u: ", u); 
+    INFO("delta: ", maxDelta);
+    INFO("for: ", bestCommunity);
+    if (bestCommunity == none || bestCommunity== std::numeric_limits<uint64_t>::max()) {
+      continue;
+    }
+
+    singleton[bestCommunity] = false;
+
+    for (node nid : zeta.getMembers(u)){
+      refined[nid] = bestCommunity;
+    }
+
+    refinedVolumes[bestCommunity] += communityVolumes_1[u];
+    refinedVolumes[current_comm] -= communityVolumes_1[u];
+
+    cutCtoSminusC[bestCommunity] = HypergraphCut(graph, refined, bestCommunity);
+  }
+    
+    DEBUG("Ending refinement with ", refined.numberOfSubsets(), " partitions");
     return refined;
 }
 
