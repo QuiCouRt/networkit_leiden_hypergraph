@@ -59,7 +59,7 @@ namespace NetworKit {
 
 class CommunityGTest : public testing::Test {};
 
-TEST_F(CommunityGTest, testIsaline_Greedy_Move_Leiden) {
+TEST_F(CommunityGTest, testIsaline_Leiden) {
     // Hypergraph creation : 
     bool weighted = true; 
     Hypergraph hg(6, 7, weighted);
@@ -82,18 +82,17 @@ TEST_F(CommunityGTest, testIsaline_Greedy_Move_Leiden) {
     Partition q(hg.numberOfNodes());
     q.allToSingletons();
     q.mergeSubsets(q[0], q[2]);
-    q.mergeSubsets(q[2], q[1]);
     q.mergeSubsets(q[4], q[5]);
-    //q.mergeSubsets(q[0], q[2]);
-    //q.mergeSubsets(q[2], q[3]);
     Partition t(hg.numberOfNodes());
     t.allToSingletons();
     t.mergeSubsets(t[0], t[2]);
-    t.mergeSubsets(t[0], t[3]);
+    t.mergeSubsets(t[0], t[1]);
     t.mergeSubsets(t[4], t[5]);
+    t.mergeSubsets(t[3], t[5]);
     ModularityHypergraph modularityHypergraph;
     double mod_q = modularityHypergraph.getQualityHypergraph(q, hg, 1);
     double mod_t = modularityHypergraph.getQualityHypergraph(t, hg, 1);
+    EXPECT_LE(mod_t, mod_q);
 
     HypergraphLeiden pl(hg);
     pl.run();
@@ -145,8 +144,6 @@ TEST_F(CommunityGTest, testIsaline_Modularity_Hypergraph) {
     // For majority edge contribution
     double gain_1 = modularityHypergraph.deltaModularityHypergraph(p, hg, S, p[3], 1);
     DEBUG("modularity gain: ", gain_1);
-    //EXPECT_GE(0.127, gain) << "modularity gain value is < 0.906";
-    //EXPECT_LE(0.126, gain) << "modularity gain value is > 0.9";
     ASSERT_TRUE(gain_1 ==0 +13825.0 /57122.0);
 
 

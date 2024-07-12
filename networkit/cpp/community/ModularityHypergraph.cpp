@@ -15,6 +15,8 @@
 #include <networkit/community/ModularityHypergraph.hpp>
 
 // TODO check if binom exist in networkit
+// Fast binomial coefficient calculation function
+// k among n
 double BinomialCoefficient(const double n, const double k) {
   std::vector<double> aSolutions(k);
   aSolutions[0] = n - k + 1;
@@ -25,6 +27,8 @@ double BinomialCoefficient(const double n, const double k) {
 
   return aSolutions[k - 1];
 }
+
+
 
 namespace NetworKit {
 
@@ -374,6 +378,7 @@ double ModularityHypergraph::deltaModularityHypergraph(const Partition &zeta, co
             expCovGain += (EdgeSizeWeight[j] / (totalEdgeWeight * pow(volume,j))) * sum;
         }
     } 
+    
     /*Aux::Log::setLogLevel("DEBUG");
     INFO("true mod comp ", covGain); 
     INFO("minus ", expCovGain);*/

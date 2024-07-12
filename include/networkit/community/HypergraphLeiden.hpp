@@ -40,39 +40,24 @@ public:
      * @param iterations Number of Leiden Iterations to be run
      * @param randomize Randomize node order?
      * @param gamma Resolution parameter
+     * @param gamma_cut Resolution parameter for refinement phase
+     * @param type_contribution Type of modularity chosen : 0=strict or 1=majority
      */
-    HypergraphLeiden(const Hypergraph &graph, int iterations = 3, bool randomize = false, double gamma = 1, int type_contribution = 1, double gamma_cut = 0.035);
+    HypergraphLeiden(const Hypergraph &graph, int iterations = 3, bool randomize = false, double gamma = 1, double gamma_cut = 0.035, int type_contribution = 1);
 
     void run() override;
 
     int VECTOR_OVERSIZE = 10000;
 
 private:
-    /*inline double modularityDelta(double cutD, double degreeV, double volD) const {
-        return cutD - gamma * degreeV * volD * inverseGraphVolume;
-    };
-
-    inline double modularityThreshold(double cutC, double volC, double degreeV) const {
-        return cutC - gamma * (volC - degreeV) * degreeV * inverseGraphVolume;
-    }*/
-
-    static inline void lockLowerFirst(index a, index b, std::vector<std::mutex> &locks) {
-        if (a < b) {
-            locks[a].lock();
-            locks[b].lock();
-        } else {
-            locks[b].lock();
-            locks[a].lock();
-        }
-    }
 
     void calculateVolumesHypergraph(const Hypergraph &graph);
 
-    void parallelMoveHypergraph(const Hypergraph &graph, const Partition &zeta);
+    void MoveHypergraph(const Hypergraph &graph, const Partition &zeta);
 
     double deltaModHypergraph(const Hypergraph &graph, const Partition &zeta, index S, const Partition &p, index c, index target_c);
 
-    Partition parallelRefineHypergraph(const Hypergraph &graph,const Partition &zeta);
+    Partition RefineHypergraph(const Hypergraph &graph,const Partition &zeta);
 
     double HypergraphCut(const Hypergraph &graph, const Partition &zeta, index S);
 
