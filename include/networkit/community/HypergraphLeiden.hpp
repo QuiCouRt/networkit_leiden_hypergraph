@@ -30,6 +30,13 @@
 #include <networkit/graph/Hypergraph.hpp>
 #include <networkit/structures/Partition.hpp>
 
+//Hyperedge weight function depending on their order
+double weight_1(double x) {
+    return x / 2.0;
+}
+
+
+
 namespace NetworKit {
 
 class HypergraphLeiden final : public CommunityDetectionAlgorithm {
@@ -40,10 +47,11 @@ public:
      * @param iterations Number of Leiden Iterations to be run
      * @param randomize Randomize node order?
      * @param gamma Resolution parameter
-     * @param gamma_cut Resolution parameter for refinement phase
+     * @param gamma_cut Resolution parameter for refinement phase, by default = 1 / vol(graph)
      * @param type_contribution Type of modularity chosen : 0=strict or 1=majority
+     * @param weightFun Hyperedge weight function depending on their order
      */
-    HypergraphLeiden(const Hypergraph &graph, int iterations = 3, bool randomize = false, double gamma = 1, double gamma_cut = 0.035, int type_contribution = 1);
+    HypergraphLeiden(const Hypergraph &graph, int iterations = 3, bool randomize = false, double gamma = 1, double gamma_cut = none, int type_contribution = 1, double (*weightFun)(double)= &weight_1);
 
     void run() override;
 
@@ -92,6 +100,7 @@ private:
 
     int step=0.0;
 
+    double (*weightFun)(double);
 };
 
 } // namespace NetworKit

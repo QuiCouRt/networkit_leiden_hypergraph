@@ -38,7 +38,7 @@ void ModularityHypergraph::setTotalEdgeWeight(double totalEdgeWeight) {
     gTotalEdgeWeight = totalEdgeWeight;
 }
 
-double ModularityHypergraph::getQualityHypergraph(const Partition &zeta, const Hypergraph &G, int type_contribution) {
+double ModularityHypergraph::getQualityHypergraph(const Partition &zeta, const Hypergraph &G, double gamma, int type_contribution) {
     assert(G.numberOfNodes() <= zeta.numberOfElements());
     double cov = 0.0;
     double expCov = 0.0;
@@ -125,7 +125,7 @@ double ModularityHypergraph::getQualityHypergraph(const Partition &zeta, const H
         }
         
         expCov = expCov / totalEdgeWeight; 
-        modularity = cov - expCov;
+        modularity = cov - gamma *expCov;
 
     }// End if for strict edge contribution : type_contribution == 0 
 
@@ -206,14 +206,14 @@ double ModularityHypergraph::getQualityHypergraph(const Partition &zeta, const H
         }
 
         expCov = expCov / totalEdgeWeight;
-        modularity =  cov - expCov;
+        modularity =  cov - gamma * expCov;
     }
     return modularity;
 }
 
 
 
-double ModularityHypergraph::deltaModularityHypergraph(const Partition &zeta, const Hypergraph &G, std::set<node> S, index target_c, int type_contribution) {
+double ModularityHypergraph::deltaModularityHypergraph(const Partition &zeta, const Hypergraph &G, std::set<node> S, index target_c,  double gamma, int type_contribution) {
     double modularityGain =0.0; // modularityGain = covGain - expCovGain
     double covGain =0.0;
     double expCovGain = 0.0;
@@ -382,7 +382,7 @@ double ModularityHypergraph::deltaModularityHypergraph(const Partition &zeta, co
     /*Aux::Log::setLogLevel("DEBUG");
     INFO("true mod comp ", covGain); 
     INFO("minus ", expCovGain);*/
-    modularityGain= covGain - expCovGain; 
+    modularityGain= covGain - gamma * expCovGain; 
 
     return modularityGain;
 }

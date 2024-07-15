@@ -40,10 +40,11 @@ public:
      *
      * @param zeta The clustering.
      * @param G The graph.
+     * @param gamma Resolution parameter
      * @param type_contribution The type of modularity : 0=strict or 1=majority.
      * @return The modularity.
      */
-    double getQualityHypergraph(const Partition &zeta, const Hypergraph &G, int type_contribution);
+    double getQualityHypergraph(const Partition &zeta, const Hypergraph &G, double gamma = 1.0, int type_contribution=1);
 
     /**
      * Returns the gain of Modularity obtained by moving the set of nodes S in community c.
@@ -53,10 +54,11 @@ public:
      * @param G The graph.
      * @param S The set of nodes that we want to move.
      * @param c The target community.
+     * @param gamma Resolution parameter
      * @param type_contribution The type of modularity : 0=strict or 1=majority.
      * @return The modularity gain.
      */
-    double deltaModularityHypergraph(const Partition &zeta, const Hypergraph &G, std::set<node> S, index c, int type_contribution);
+    double deltaModularityHypergraph(const Partition &zeta, const Hypergraph &G, std::set<node> S, index c, double gamma=1.0, int type_contribution=1);
 
     /**
      * @param totalEdgeWeight Sum of all edge weights in @a G. If specified, it does not

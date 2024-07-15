@@ -62,9 +62,9 @@ class CommunityGTest : public testing::Test {};
 TEST_F(CommunityGTest, testIsaline_Leiden) {
     // Hypergraph creation : 
     bool weighted = true; 
-    Hypergraph hg(6, 7, weighted);
+    Hypergraph hg(6, 0, weighted);
     std::vector<node> edge1 = {0, 1, 2};
-    hg.addEdge(edge1, 3.0, true);
+    hg.addEdge(edge1, 1.5, true);
     std::vector<node> edge2 = {0, 2};
     hg.addEdge(edge2, 1.0, true);
     std::vector<node> edge3 = {1, 2};
@@ -76,7 +76,7 @@ TEST_F(CommunityGTest, testIsaline_Leiden) {
     std::vector<node> edge6 = {4, 5};
     hg.addEdge(edge6, 1.0, true);
     std::vector<node> edge7 = {3, 4, 5};
-    hg.addEdge(edge7, 3.0, true);
+    hg.addEdge(edge7, 1.5, true);
 
 
     Partition q(hg.numberOfNodes());
@@ -100,7 +100,7 @@ TEST_F(CommunityGTest, testIsaline_Leiden) {
     double mod_zeta = modularityHypergraph.getQualityHypergraph(zeta, hg, 1);
 
     ASSERT_TRUE(zeta[0]==2);
-    ASSERT_TRUE(zeta[1]==1);
+    ASSERT_TRUE(zeta[1]==2);
     ASSERT_TRUE(zeta[2]==2);
     ASSERT_TRUE(zeta[3]==3);
     ASSERT_TRUE(zeta[4]==5);
@@ -127,22 +127,22 @@ TEST_F(CommunityGTest, testIsaline_Modularity_Hypergraph) {
 
     // Test modularity value for strict edge contribution
     ModularityHypergraph modularityHypergraph;
-    double mod_0 = modularityHypergraph.getQualityHypergraph(p, hg, 0);
+    double mod_0 = modularityHypergraph.getQualityHypergraph(p, hg,1.0,0);
     DEBUG("modularity: ", mod_0);
     ASSERT_TRUE(mod_0 == 0.9 - 2065805. / 2284880.0);
 
     // Test modularity value for majority edge contribution
-    double mod_1 = modularityHypergraph.getQualityHypergraph(p, hg, 1);
+    double mod_1 = modularityHypergraph.getQualityHypergraph(p, hg, 1.0,1);
     DEBUG("modularity: ", mod_1);
     ASSERT_TRUE(mod_1 == 1- 2198505.0/2284880.0);
     //Testing the value of the modularity gain from moving nodes 0 and 2 into the community of 3
     // For strict edge contribution
     std::set<node> S({0,2});
-    double gain_0 = modularityHypergraph.deltaModularityHypergraph(p, hg, S, p[3], 0);
+    double gain_0 = modularityHypergraph.deltaModularityHypergraph(p, hg, S, p[3], 1.0, 0);
     DEBUG("modularity gain: ", gain_0);
     ASSERT_TRUE(gain_0 == -0.4 + 30093.0 / 57122.0);
     // For majority edge contribution
-    double gain_1 = modularityHypergraph.deltaModularityHypergraph(p, hg, S, p[3], 1);
+    double gain_1 = modularityHypergraph.deltaModularityHypergraph(p, hg, S, p[3], 1.0, 1);
     DEBUG("modularity gain: ", gain_1);
     ASSERT_TRUE(gain_1 ==0 +13825.0 /57122.0);
 
@@ -153,9 +153,9 @@ TEST_F(CommunityGTest, testIsaline_Modularity_Hypergraph) {
     q.mergeSubsets(q[0], q[3]);
     q.mergeSubsets(q[0], q[2]);
     q.mergeSubsets(q[1], q[4]);
-    double mod_prime_1 = modularityHypergraph.getQualityHypergraph(q, hg, 1);
+    double mod_prime_1 = modularityHypergraph.getQualityHypergraph(q, hg, 1.0, 1);
     ASSERT_TRUE(mod_prime_1 == mod_1 + gain_1);
-    double mod_prime_0 = modularityHypergraph.getQualityHypergraph(q, hg, 0);
+    double mod_prime_0 = modularityHypergraph.getQualityHypergraph(q, hg, 1.0, 0);
     ASSERT_TRUE(mod_prime_0 == mod_0 + gain_0 );
 }
 

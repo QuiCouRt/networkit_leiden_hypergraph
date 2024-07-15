@@ -21,23 +21,29 @@ double BinomialCoef(const double n, const double k) {
   return aSolutions[k - 1];
 }
 
-
 namespace NetworKit {
-HypergraphLeiden::HypergraphLeiden(const Hypergraph &graph, int iterations, bool randomize, double gamma, double gamma_cut, int type_contribution)
-    : CommunityDetectionAlgorithm(graph), gamma(gamma), numberOfIterations(iterations), random(randomize), gamma_cut(gamma_cut), type_contribution(type_contribution) {
+HypergraphLeiden::HypergraphLeiden(const Hypergraph &graph, int iterations, bool randomize, double gamma, double gamma_cut, int type_contribution, double (*weightFun)(double))
+    : CommunityDetectionAlgorithm(graph), gamma(gamma), numberOfIterations(iterations), random(randomize), gamma_cut(gamma_cut), type_contribution(type_contribution), weightFun (weightFun) {
     this->result = Partition(graph.numberOfNodes());
     this->result.allToSingletons();
 }
 
 void HypergraphLeiden::run() {
+
     handler.assureRunning();
-    const Hypergraph *currentGraph = HG;
+    Hypergraph *currentGraph = const_cast<Hypergraph*>(HG);
     
     //For loop to obtain the max size edge
+    double s;
     d=0;
     (*currentGraph).forEdges([&](edgeid eid, edgeweight ew) {
-        if ((*currentGraph).getEdgeIncidence(eid).size()>d){
-            d=(*currentGraph).getEdgeIncidence(eid).size();
+        s = ((*currentGraph).getEdgeIncidence(eid)).size();
+        if (s>d){
+            d=s;
+        }
+        if (ew != weightFun(s)){
+          currentGraph->setEdgeWeight(eid,weightFun(s));
+          DEBUG("weights on hyperedges that are set incorrectly, it's correct with ", currentGraph->getEdgeWeight(eid));
         }
     });
 
@@ -48,6 +54,10 @@ void HypergraphLeiden::run() {
         EdgeSizeWeight[(*currentGraph).getEdgeIncidence(eid).size()] += ew;
         totalEdgeWeight += ew;
     });
+
+    if (gamma_cut== none){
+      gamma_cut = 1.0 / totalEdgeWeight;
+    }
 
     // At initialization each node is in a singleton community
     Partition zeta((*currentGraph).upperNodeIdBound());
@@ -445,7 +455,7 @@ double HypergraphLeiden::HypergraphCut(const Hypergraph &graph, const Partition 
     }
     double w =0;
     if (i!= 0 && j!=0){
-      w = (i+j)/2.0; /// TODO other weight "-1"
+      w = weightFun(i+j);
     }
     cut += w;
   }
