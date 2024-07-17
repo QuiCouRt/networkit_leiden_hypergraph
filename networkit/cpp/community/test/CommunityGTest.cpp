@@ -135,6 +135,19 @@ TEST_F(CommunityGTest, testIsaline_Modularity_Hypergraph) {
     double mod_1 = modularityHypergraph.getQualityHypergraph(p, hg, 1.0,1);
     DEBUG("modularity: ", mod_1);
     ASSERT_TRUE(mod_1 == 1- 2198505.0/2284880.0);
+
+    // Test modularity value for strict edge contribution / partially weighted
+    double mod_10 = modularityHypergraph.getQualityHypergraph(p, hg,1.0,10);
+    DEBUG("modularity: ", mod_10);
+    EXPECT_LE(mod_10 - 0.0000000000000001, 0.9 - 4889.0 / 6561.0); //C++ double should have a floating-point precision of up to 15 digits
+    EXPECT_GE(mod_10 + 0.0000000000000001, 0.9 - 4889.0 / 6561.0);
+
+    // Test modularity value for majority edge contribution / partially weighted
+    double mod_11 = modularityHypergraph.getQualityHypergraph(p, hg, 1.0,11);
+    DEBUG("modularity: ", mod_11);
+    ASSERT_TRUE(mod_11 == 1- 9791.0 /10935.0);
+
+
     //Testing the value of the modularity gain from moving nodes 0 and 2 into the community of 3
     // For strict edge contribution
     std::set<node> S({0,2});
@@ -146,6 +159,13 @@ TEST_F(CommunityGTest, testIsaline_Modularity_Hypergraph) {
     DEBUG("modularity gain: ", gain_1);
     ASSERT_TRUE(gain_1 ==0 +13825.0 /57122.0);
 
+    // For strict edge contribution / partially weighted
+    double gain_10 = modularityHypergraph.deltaModularityHypergraph(p, hg, S, p[3], 1.0, 10);
+    DEBUG("modularity gain: ", gain_10);
+    // For majority edge contribution / partially weighted
+    double gain_11 = modularityHypergraph.deltaModularityHypergraph(p, hg, S, p[3], 1.0, 11);
+    DEBUG("modularity gain: ", gain_11);
+
 
     //check the value of gain
     Partition q(hg.numberOfNodes());
@@ -156,7 +176,13 @@ TEST_F(CommunityGTest, testIsaline_Modularity_Hypergraph) {
     double mod_prime_1 = modularityHypergraph.getQualityHypergraph(q, hg, 1.0, 1);
     ASSERT_TRUE(mod_prime_1 == mod_1 + gain_1);
     double mod_prime_0 = modularityHypergraph.getQualityHypergraph(q, hg, 1.0, 0);
-    ASSERT_TRUE(mod_prime_0 == mod_0 + gain_0 );
+    ASSERT_TRUE(mod_prime_0 == mod_0 + gain_0);
+    double mod_prime_11 = modularityHypergraph.getQualityHypergraph(q, hg, 1.0, 11);
+    EXPECT_LE(mod_prime_11 - 0.0000000000000001, mod_11 + gain_11);
+    EXPECT_GE(mod_prime_11 + 0.0000000000000001, mod_11 + gain_11);
+    double mod_prime_10 = modularityHypergraph.getQualityHypergraph(q, hg, 1.0, 10);
+    EXPECT_LE(mod_prime_10 - 0.0000000000000001, mod_10 + gain_10);
+    EXPECT_GE(mod_prime_10 + 0.0000000000000001, mod_10 + gain_10);
 }
 
 TEST_F(CommunityGTest, testLabelPropagationOnUniformGraph) {

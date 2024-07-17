@@ -36,12 +36,12 @@ public:
     ModularityHypergraph();
 
     /**
-     * Returns the Modularity of the given clustering with respect to the graph @a G.
+     * Returns the Modularity of the given clustering with respect to the hypergraph @a G.
      *
      * @param zeta The clustering.
-     * @param G The graph.
+     * @param G The hypergraph.
      * @param gamma Resolution parameter
-     * @param type_contribution The type of modularity : 0=strict or 1=majority.
+     * @param type_contribution The type of modularity : 00=strict , or 01=majority , or 10=strict/partially weighted , or 11=majority/partially weighted.
      * @return The modularity.
      */
     double getQualityHypergraph(const Partition &zeta, const Hypergraph &G, double gamma = 1.0, int type_contribution=1);
@@ -51,11 +51,11 @@ public:
      * Warning : all nodes of S muss belong to the same community. 
      *
      * @param zeta The clustering.
-     * @param G The graph.
+     * @param G The hypergraph.
      * @param S The set of nodes that we want to move.
      * @param c The target community.
      * @param gamma Resolution parameter
-     * @param type_contribution The type of modularity : 0=strict or 1=majority.
+     * @param type_contribution The type of modularity : 00=strict , or 01=majority , or 10=strict/partially weighted , or 11=majority/partially weighted.
      * @return The modularity gain.
      */
     double deltaModularityHypergraph(const Partition &zeta, const Hypergraph &G, std::set<node> S, index c, double gamma=1.0, int type_contribution=1);
