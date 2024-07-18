@@ -408,10 +408,10 @@ void HypergraphLouvain::MoveHypergraph(const Hypergraph &graph, const Partition 
 
       // We move the block u into the best community found
       if (exit_best_com){
-      Aux::Log::setLogLevel("DEBUG");
+      /*Aux::Log::setLogLevel("DEBUG");
       INFO("move u: ", u); 
       INFO("delta: ", maxDelta);
-      INFO("for: ", bestCommunity);
+      INFO("for: ", bestCommunity);*/
       if (maxDelta <= 0){
         bestCommunity=current_comm;
       }

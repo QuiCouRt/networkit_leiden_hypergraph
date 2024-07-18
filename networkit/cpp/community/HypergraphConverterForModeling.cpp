@@ -23,7 +23,7 @@ void HypergraphModeling::run() {
     const Hypergraph *currentGraph = HG;
 
     FILE * f;
-    f = fopen ("Output/Hypergraph.txt", "wt");
+    f = fopen ("output/Hypergraph.txt", "wt");
     if (f == NULL)
         DEBUG("Unable to open file for writing!");
     else
@@ -41,7 +41,7 @@ void HypergraphModeling::run() {
     }
 
     FILE * p;
-    p = fopen ("Output/Partition.txt", "wt");
+    p = fopen ("output/Partition.txt", "wt");
     if (p == NULL)
         DEBUG("Unable to open file for writing!");
     else
