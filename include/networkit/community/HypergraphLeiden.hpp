@@ -70,9 +70,13 @@ private:
     double HypergraphCut(const Hypergraph &graph, const Partition &zeta, index S);
 
     double GraphVolume; // vol(V)
+    double GraphVolume_unweighted;
 
     std::vector<double> communityVolumes_1; //volume of each community 
     std::vector<double> communityVolumes_2;
+
+    std::vector<double> communityVolumes_1_unweighted; //volume of each community 
+    std::vector<double> communityVolumes_2_unweighted;
 
     int d; //max size of hyperedge
 

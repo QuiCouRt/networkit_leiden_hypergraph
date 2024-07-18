@@ -754,11 +754,11 @@ cdef extern from "<networkit/community/HypergraphLeiden.hpp>":
 
 	cdef cppclass _HypergraphLeiden "NetworKit::HypergraphLeiden"(_CommunityDetectionAlgorithm):
 		_HypergraphLeiden(_Graph _G) except +
-		_HypergraphLeiden(_Graph _G, int iterations, bool_t randomize, double gamma) except +
+		_HypergraphLeiden(_Graph _G, int iterations, bool_t randomize, double gamma, double gamma_cut, int type_contribution, double (*weightFun)(double)) except +
 
 cdef class HypergraphLeiden(CommunityDetector):
 	""" 
-	HypergraphLeiden(G, randomize=True, iterations=3, gamma=1)
+	HypergraphLeiden(G, randomize=True, iterations=3, gamma=1, gamma_cut=none, type_contribution=1, double(*weightFun)(double)= &weight_1)
 
 	Leiden Algorithm for Hypergraph.
 
@@ -772,11 +772,49 @@ cdef class HypergraphLeiden(CommunityDetector):
 		Maximum count of Leiden runs. Default: 3
 	gamma : float, optional
 		Multi-resolution modularity parameter: 1.0 (standard modularity), 0.0 (one community), 2m (singleton communities). Default: 1.0
+	gamma_cut : float, optimal
+		Parameter to define well-connected nodes: 1.0 (no node is well-connected), 0.0 (every node is well-connected). Default: none (later assigned to 1/GraphVolume)
+	type_contribution : int, optimal
+		Different modularity formulas: 0(strict), 1(majority), 10(strict/partially weighted), 11(majority/partially weighted). Default: 1
+	weightFun :
+		weight function on edges. Default: 0.5 * order of edge 
 	"""
 
-	def __cinit__(self, Graph G not None, int iterations = 3, bool_t randomize = True, double gamma = 1):
+	def __cinit__(self, Graph G not None, int iterations = 3, bool_t randomize = True, double gamma = 1, double gamma_cut = 1, int type_contribution = 1, double (*weightFun)(double)=&weight_1):
 		self._G = G
-		self._this = new _HypergraphLeiden(G._this,iterations,randomize,gamma)
+		self._this = new _HypergraphLeiden(G._this,iterations,randomize,gamma,gamma_cut,type_contribution,weightFun)
+
+cdef extern from "<networkit/community/HypergraphLouvain.hpp>":
+
+	cdef cppclass _HypergraphLouvain "NetworKit::HypergraphLouvain"(_CommunityDetectionAlgorithm):
+		_HypergraphLouvain(_Graph _G) except +
+		_HypergraphLouvain(_Graph _G, int iterations, bool_t randomize, double gamma, int type_contribution, double (*weightFun)(double)) except +
+
+cdef class HypergraphLouvain(CommunityDetector):
+	""" 
+	HypergraphLouvain(G, randomize=True, iterations=3, gamma=1, type_contribution=1, double(*weightFun)(double)= &weight_1)
+
+	Louvain Algorithm for Hypergraph.
+
+	Parameters
+	----------
+	G : networkit.Graph
+		A graph.
+	randomize : bool, optional
+		Whether to randomize the node order or not. Default: True
+	iterations : int, optional
+		Maximum count of Louvain runs. Default: 3
+	gamma : float, optional
+		Multi-resolution modularity parameter: 1.0 (standard modularity), 0.0 (one community), 2m (singleton communities). Default: 1.0
+	type_contribution : int, optimal
+		Different modularity formulas: 0(strict), 1(majority), 10(strict/partially weighted), 11(majority/partially weighted). Default: 1
+	weightFun :
+		weight function on edges. Default: 0.5 * order of edge 
+	"""
+
+	def __cinit__(self, Graph G not None, int iterations = 3, bool_t randomize = True, double gamma = 1, int type_contribution = 1, double (*weightFun)(double)=&weight_1):
+		self._G = G
+		self._this = new _HypergraphLouvain(G._this,iterations,randomize,gamma,type_contribution,weightFun)
 
 cdef extern from "<networkit/community/LouvainMapEquation.hpp>":
 	cdef cppclass _LouvainMapEquation "NetworKit::LouvainMapEquation"(_CommunityDetectionAlgorithm):

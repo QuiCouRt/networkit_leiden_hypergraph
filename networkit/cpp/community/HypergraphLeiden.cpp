@@ -32,6 +32,15 @@ void HypergraphLeiden::run() {
 
     handler.assureRunning();
     Hypergraph *currentGraph = const_cast<Hypergraph*>(HG);
+
+    //Initialization of volumes
+    calculateVolumesHypergraph(*currentGraph);
+
+    // communityVolumes_1 corresponds to the volume of our blocks
+    // communityVolumes_2 corresponds to the volume of the communities we are building (by greedy move of blocks)
+    communityVolumes_2 = communityVolumes_1; // Initialy we have only singleton comm, so communityVolumes_2 = communityVolumes_1
+    //unweighted
+    communityVolumes_2_unweighted = communityVolumes_1_unweighted;
     
     //For loop to obtain the max size edge
     double s;
@@ -56,7 +65,7 @@ void HypergraphLeiden::run() {
     });
 
     if (gamma_cut== none){
-      gamma_cut = 1.0 / totalEdgeWeight;
+      gamma_cut = 1.0 / GraphVolume;
     }
 
     // At initialization each node is in a singleton community
@@ -83,10 +92,11 @@ void HypergraphLeiden::run() {
     // Main loop
     // greedy move + refinement phase until there are no more community changes, or we exceed the numberOfIterations
     for (int i = 0; i < numberOfIterations; ++i) {
-        calculateVolumesHypergraph(*currentGraph);
         MoveHypergraph((*currentGraph), zeta);
         refined = RefineHypergraph((*currentGraph), zeta);
         result = refined;
+        communityVolumes_1 = communityVolumes_2;
+        communityVolumes_1_unweighted = communityVolumes_2_unweighted;
         
         // Stop the loop if greedy move and refinement phase do no community changes
         if (zeta.numberOfSubsets() == refined.numberOfSubsets()) {
@@ -115,22 +125,30 @@ void HypergraphLeiden::calculateVolumesHypergraph(const Hypergraph &graph){
   timer.start();
   communityVolumes_1.clear();
   communityVolumes_1.resize(result.upperBound());
+  communityVolumes_1_unweighted.clear();
+  communityVolumes_1_unweighted.resize(result.upperBound());
   GraphVolume=0.0;
+  GraphVolume_unweighted=0.0;
   if (true) {
     std::vector<double> threadVolumes(omp_get_max_threads());
+    std::vector<double> threadVolumes_unweighted(omp_get_max_threads());
     graph.forNodes([&](node nid, nodeweight nw) {
       {
       for (edgeid eid: graph.getNodeIncidence(nid)){
         edgeweight ew =graph.getEdgeWeight(eid);
 #pragma omp atomic
         communityVolumes_1[result[nid]] += ew;
+        communityVolumes_1_unweighted[result[nid]] += 1;
         threadVolumes[omp_get_thread_num()] += ew;
+        threadVolumes_unweighted[omp_get_thread_num()] += 1;
       }}
     });
     for (const auto vol : threadVolumes) {
       GraphVolume += vol;
     }
-    GraphVolume = GraphVolume;
+    for (const auto vol : threadVolumes_unweighted) {
+      GraphVolume_unweighted += vol;
+    }
   } 
   TRACE("Calculating Volumes took " + timer.elapsedTag());
 }
@@ -142,11 +160,6 @@ double HypergraphLeiden::deltaModHypergraph(const Hypergraph &graph, const Parti
   double covGain =0.0;
   double expCovGain = 0.0;
 
-  // The volume of S, community of S and target community. 
-  double vol_S=communityVolumes_1[S];
-  double vol_c = communityVolumes_2[c]; 
-  double vol_target_c = communityVolumes_2[target_c];
-
   std::set<node> set_S = zeta.getMembers(S);
   std::set<edgeid> border_edge;
   for (node n : set_S){
@@ -156,7 +169,7 @@ double HypergraphLeiden::deltaModHypergraph(const Hypergraph &graph, const Parti
   }
 
 
-  if (type_contribution==0) {
+  if (type_contribution==0 || type_contribution==10) {
     // >>>>> STRICT EDGE CONTRIBUTION
 
     // Let us compute covGain for strict edge contribution
@@ -199,16 +212,40 @@ double HypergraphLeiden::deltaModHypergraph(const Hypergraph &graph, const Parti
     }
     covGain = (in_target_c_S - in_c_S) / totalEdgeWeight;
 
-    // Let us compute expCovGain for strict edge contribution
-    // Formulas :
-    // expCovGain = \sum_{d\geq 2} \frac{|E_d|_w}{|E|_w vol_w(V)^d}(vol_w(c'+S)^d -vol_w(c')^d -vol_w(c)^d + vol_w(c-S)^d)
-    for (double j=0 ; j < d+1; j++){
-      expCovGain += (EdgeSizeWeight[j] / (totalEdgeWeight * pow(GraphVolume,j))) * ( pow(vol_target_c + vol_S,j)-pow(vol_target_c,j)  - pow(vol_c,j) + pow(vol_c - vol_S,j));
+    if (type_contribution==0) {
+      // FULLY WEIGHTED
+
+      // The volume of S, community of S and target community. 
+      double vol_S=communityVolumes_1[S];
+      double vol_c = communityVolumes_2[c]; 
+      double vol_target_c = communityVolumes_2[target_c];
+
+      // Let us compute expCovGain for strict edge contribution
+      // Formulas :
+      // expCovGain = \sum_{d\geq 2} \frac{|E_d|_w}{|E|_w vol_w(V)^d}(vol_w(c'+S)^d -vol_w(c')^d -vol_w(c)^d + vol_w(c-S)^d)
+      for (double j=0 ; j < d+1; j++){
+        expCovGain += (EdgeSizeWeight[j] / (totalEdgeWeight * pow(GraphVolume,j))) * ( pow(vol_target_c + vol_S,j)-pow(vol_target_c,j)  - pow(vol_c,j) + pow(vol_c - vol_S,j));
+      }
+    }
+    else{
+      // PARTIALLY WEIGHTED
+
+      // The volume of S, community of S and target community. 
+      double vol_S=communityVolumes_1_unweighted[S];
+      double vol_c = communityVolumes_2_unweighted[c]; 
+      double vol_target_c = communityVolumes_2_unweighted[target_c];
+
+      // Let us compute expCovGain for strict edge contribution
+      // Formulas :
+      // expCovGain = \sum_{d\geq 2} \frac{|E_d|_w}{|E|_w vol_w(V)^d}(vol_w(c'+S)^d -vol_w(c')^d -vol_w(c)^d + vol_w(c-S)^d)
+      for (double j=0 ; j < d+1; j++){
+        expCovGain += (EdgeSizeWeight[j] / (totalEdgeWeight * pow(GraphVolume_unweighted,j))) * ( pow(vol_target_c + vol_S,j)-pow(vol_target_c,j)  - pow(vol_c,j) + pow(vol_c - vol_S,j));
+      }
     }
   }
 
 
-  if (type_contribution==1) {// >>>>> MAJORITY EDGE CONTRIBUTION
+  if (type_contribution==1 || type_contribution ==11) {// >>>>> MAJORITY EDGE CONTRIBUTION
 
     // Let us compute covGain for majority edge contribution
     // Formulas :
@@ -248,20 +285,49 @@ double HypergraphLeiden::deltaModHypergraph(const Hypergraph &graph, const Parti
     }
     covGain = (in_target_c_S - in_c_S) / totalEdgeWeight;
 
-    // Let us compute expCovGain for majority edge contribution
-    // Formulas :
-    // expCovGain = \sum_{d\geq 2} \frac{|E_d|}{|E| vol(V)^d} \sum_{i=\frac{d}{2}+1}^{d} \binom{d}{i} (vol(c'+S)^i(vol(V)-vol(c'+S))^{d-i} -vol(c')^i(vol(V)-vol(c'))^{d-i} -vol(c)^i(vol(V)-vol(c))^{d-i} + vol(c-S)^i(vol(V)-vol(c-S))^{d-i})
-    double sum = 0.0;
-    for (double j=0 ; j < d+1; j++){
-      sum = 0.0;
-      for (double i= int ((j / 2.) + 1); i <= j; i++){
-        sum += BinomialCoef(j,i) *(pow((vol_target_c + vol_S),i)*pow((GraphVolume - vol_target_c - vol_S),j-i) -  pow(vol_target_c,i)*pow((GraphVolume - vol_target_c),j-i) - pow(vol_c ,i)*pow((GraphVolume- vol_c),j-i) + pow((vol_c - vol_S),i)*pow((GraphVolume - vol_c + vol_S),j-i));
+
+    if (type_contribution==1) {
+      // FULLY WEIGHTED
+
+      // The volume of S, community of S and target community. 
+      double vol_S=communityVolumes_1[S];
+      double vol_c = communityVolumes_2[c]; 
+      double vol_target_c = communityVolumes_2[target_c];
+
+      // Let us compute expCovGain for majority edge contribution
+      // Formulas :
+      // expCovGain = \sum_{d\geq 2} \frac{|E_d|}{|E| vol(V)^d} \sum_{i=\frac{d}{2}+1}^{d} \binom{d}{i} (vol(c'+S)^i(vol(V)-vol(c'+S))^{d-i} -vol(c')^i(vol(V)-vol(c'))^{d-i} -vol(c)^i(vol(V)-vol(c))^{d-i} + vol(c-S)^i(vol(V)-vol(c-S))^{d-i})
+      double sum = 0.0;
+      for (double j=0 ; j < d+1; j++){
+        sum = 0.0;
+        for (double i= int ((j / 2.) + 1); i <= j; i++){
+          sum += BinomialCoef(j,i) *(pow((vol_target_c + vol_S),i)*pow((GraphVolume - vol_target_c - vol_S),j-i) -  pow(vol_target_c,i)*pow((GraphVolume - vol_target_c),j-i) - pow(vol_c ,i)*pow((GraphVolume- vol_c),j-i) + pow((vol_c - vol_S),i)*pow((GraphVolume - vol_c + vol_S),j-i));
+        }
+        expCovGain += (EdgeSizeWeight[j] / (totalEdgeWeight * pow(GraphVolume,j))) * sum;
       }
-      expCovGain += (EdgeSizeWeight[j] / (totalEdgeWeight * pow(GraphVolume,j))) * sum;
+    } 
+    else {
+      // PARTIALLY WEIGHTED
+
+      // The volume of S, community of S and target community. 
+      double vol_S=communityVolumes_1_unweighted[S];
+      double vol_c = communityVolumes_2_unweighted[c]; 
+      double vol_target_c = communityVolumes_2_unweighted[target_c];
+
+      // Let us compute expCovGain for majority edge contribution
+      // Formulas :
+      // expCovGain = \sum_{d\geq 2} \frac{|E_d|}{|E| vol(V)^d} \sum_{i=\frac{d}{2}+1}^{d} \binom{d}{i} (vol(c'+S)^i(vol(V)-vol(c'+S))^{d-i} -vol(c')^i(vol(V)-vol(c'))^{d-i} -vol(c)^i(vol(V)-vol(c))^{d-i} + vol(c-S)^i(vol(V)-vol(c-S))^{d-i})
+      double sum = 0.0;
+      for (double j=0 ; j < d+1; j++){
+        sum = 0.0;
+        for (double i= int ((j / 2.) + 1); i <= j; i++){
+          sum += BinomialCoef(j,i) *(pow((vol_target_c + vol_S),i)*pow((GraphVolume_unweighted - vol_target_c - vol_S),j-i) -  pow(vol_target_c,i)*pow((GraphVolume_unweighted - vol_target_c),j-i) - pow(vol_c ,i)*pow((GraphVolume_unweighted- vol_c),j-i) + pow((vol_c - vol_S),i)*pow((GraphVolume_unweighted - vol_c + vol_S),j-i));
+        }
+        expCovGain += (EdgeSizeWeight[j] / (totalEdgeWeight * pow(GraphVolume_unweighted,j))) * sum;
+      }
     }
   } 
   
-
   modularityGain= covGain - gamma * expCovGain; 
 
   return modularityGain;
@@ -278,15 +344,10 @@ void HypergraphLeiden::MoveHypergraph(const Hypergraph &graph, const Partition &
 
   std::vector<bool> inQueue(zeta.upperBound(), false); // Boolean array allowing you not to add the same node twice in the queue
   std::queue<index> queue; // nodes that remain to be processed
-  
-  // communityVolumes_1 corresponds to the volume of our blocks
-  // communityVolumes_2 corresponds to the volume of the communities we are building (by greedy move of blocks)
-  communityVolumes_2.resize(communityVolumes_1.size()); // Initialy we have only singleton comm, so communityVolumes_2 = communityVolumes_1
-  copy(communityVolumes_1.begin(), communityVolumes_1.end(), communityVolumes_2.begin());
-
 
   //uint64_t vectorSize = communityVolumes_1.capacity();
   int upperBound = result.upperBound();
+
 
   std::vector<index> currentBlocks; // block to cover during a loop
   std::vector<index> newNodes;
@@ -375,6 +436,8 @@ void HypergraphLeiden::MoveHypergraph(const Hypergraph &graph, const Partition &
       }
       communityVolumes_2[bestCommunity] += communityVolumes_1[u];
       communityVolumes_2[current_comm]-= communityVolumes_1[u];
+      communityVolumes_2_unweighted[bestCommunity] += communityVolumes_1_unweighted[u];
+      communityVolumes_2_unweighted[current_comm]-= communityVolumes_1_unweighted[u];
       changed = true;
       inQueue[u] = false;
 
@@ -482,6 +545,11 @@ Partition HypergraphLeiden::RefineHypergraph(const Hypergraph &graph, const Part
   // communityVolumes_2 corresponds to the volume of the communities we are building 
   bigCommunityVolumes= communityVolumes_2;
   communityVolumes_2 = communityVolumes_1;
+  //unweighted
+  std::vector<double> bigCommunityVolumes_unweighted(refined.upperBound()); // Community Volumes P_refined
+  bigCommunityVolumes_unweighted= communityVolumes_2_unweighted;
+  communityVolumes_2_unweighted = communityVolumes_1_unweighted;
+
   std::vector<index> nodes_block(refined.upperBound(), none);
 
   std::vector<index> neighComms;
@@ -571,6 +639,8 @@ Partition HypergraphLeiden::RefineHypergraph(const Hypergraph &graph, const Part
 
     communityVolumes_2[bestCommunity] += communityVolumes_1[u];
     communityVolumes_2[current_comm] -= communityVolumes_1[u];
+    communityVolumes_2_unweighted[bestCommunity] += communityVolumes_1_unweighted[u];
+    communityVolumes_2_unweighted[current_comm] -= communityVolumes_1_unweighted[u];
 
     cutCtoSminusC[bestCommunity] = HypergraphCut(graph, refined, bestCommunity);
     cutCtoSminusC[u]=0.0;

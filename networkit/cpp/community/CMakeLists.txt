@@ -38,6 +38,7 @@ networkit_add_module(community
     LouvainMapEquation.cpp
     ParallelLeiden.cpp
     HypergraphLeiden.cpp
+    HypergraphLouvain.cpp
     ModularityHypergraph.cpp
     )
 

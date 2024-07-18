@@ -42,6 +42,7 @@
 #include <networkit/community/SampledNodeStructuralRandMeasure.hpp>
 #include <networkit/community/StablePartitionNodes.hpp>
 #include <networkit/community/HypergraphLeiden.hpp>
+#include <networkit/community/HypergraphLouvain.hpp>
 #include <networkit/generators/ClusteredRandomGraphGenerator.hpp>
 #include <networkit/generators/DynamicBarabasiAlbertGenerator.hpp>
 #include <networkit/generators/ErdosRenyiGenerator.hpp>
@@ -59,7 +60,7 @@ namespace NetworKit {
 
 class CommunityGTest : public testing::Test {};
 
-TEST_F(CommunityGTest, testIsaline_Leiden) {
+TEST_F(CommunityGTest, testIsaline_Leiden_Louvain) {
     // Hypergraph creation : 
     bool weighted = true; 
     Hypergraph hg(6, 0, weighted);
@@ -102,9 +103,20 @@ TEST_F(CommunityGTest, testIsaline_Leiden) {
     ASSERT_TRUE(zeta[0]==2);
     ASSERT_TRUE(zeta[1]==2);
     ASSERT_TRUE(zeta[2]==2);
-    ASSERT_TRUE(zeta[3]==3);
+    ASSERT_TRUE(zeta[3]==5);
     ASSERT_TRUE(zeta[4]==5);
     ASSERT_TRUE(zeta[5]==5);
+
+    HypergraphLouvain plouvain(hg);
+    plouvain.run();
+    Partition zeta_bis = plouvain.getPartition();
+
+    ASSERT_TRUE(zeta_bis[0]==2);
+    ASSERT_TRUE(zeta_bis[1]==2);
+    ASSERT_TRUE(zeta_bis[2]==2);
+    ASSERT_TRUE(zeta_bis[3]==5);
+    ASSERT_TRUE(zeta_bis[4]==5);
+    ASSERT_TRUE(zeta_bis[5]==5);
 }
 
 TEST_F(CommunityGTest, testIsaline_Modularity_Hypergraph) {
