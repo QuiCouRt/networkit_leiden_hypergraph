@@ -68,4 +68,4 @@ public:
 };
 
 } /* namespace NetworKit */
-#endif // NETWORKIT_COMMUNITY_MODULARITY_HPP_
+#endif // NETWORKIT_COMMUNITY_MODULARITY_HYPERGRAPH_HPP_

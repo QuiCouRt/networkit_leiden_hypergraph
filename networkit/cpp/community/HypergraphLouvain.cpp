@@ -1,5 +1,5 @@
 /*
- * HypergraphLeiden.cpp
+ * HypergraphLouvain.cpp
  * 
  * Created on: 07.2024
  *     Author: Isaline PLAID

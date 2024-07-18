@@ -101,4 +101,4 @@ private:
 
 } // namespace NetworKit
 
-#endif // NETWORKIT_COMMUNITY_PARALLEL_LEIDEN_HPP_
+#endif // NETWORKIT_COMMUNITY_HYPERGRAPH_LOUVAIN_HPP_

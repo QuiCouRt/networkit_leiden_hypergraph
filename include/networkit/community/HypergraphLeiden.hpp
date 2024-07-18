@@ -109,4 +109,4 @@ private:
 
 } // namespace NetworKit
 
-#endif // NETWORKIT_COMMUNITY_PARALLEL_LEIDEN_HPP_
+#endif // NETWORKIT_COMMUNITY_HYPERGRAPH_LEIDEN_HPP_

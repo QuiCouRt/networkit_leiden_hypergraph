@@ -43,6 +43,7 @@
 #include <networkit/community/StablePartitionNodes.hpp>
 #include <networkit/community/HypergraphLeiden.hpp>
 #include <networkit/community/HypergraphLouvain.hpp>
+#include <networkit/community/HypergraphConverterForModeling.hpp>
 #include <networkit/generators/ClusteredRandomGraphGenerator.hpp>
 #include <networkit/generators/DynamicBarabasiAlbertGenerator.hpp>
 #include <networkit/generators/ErdosRenyiGenerator.hpp>
@@ -106,6 +107,9 @@ TEST_F(CommunityGTest, testIsaline_Leiden_Louvain) {
     ASSERT_TRUE(zeta[3]==5);
     ASSERT_TRUE(zeta[4]==5);
     ASSERT_TRUE(zeta[5]==5);
+
+    HypergraphModeling m(hg,zeta);
+    m.run();
 
     HypergraphLouvain plouvain(hg);
     plouvain.run();

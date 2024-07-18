@@ -40,6 +40,7 @@ networkit_add_module(community
     HypergraphLeiden.cpp
     HypergraphLouvain.cpp
     ModularityHypergraph.cpp
+    HypergraphConverterForModeling.cpp
     )
 
 networkit_module_link_modules(community
