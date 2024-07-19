@@ -51,7 +51,7 @@ public:
      * @param type_contribution Type of modularity chosen : 00=strict , or 01=majority , or 10=strict/partially weighted , or 11=majority/partially weighted.
      * @param weightFun Hyperedge weight function depending on their order
      */
-    HypergraphLeiden(const Hypergraph &graph, int iterations = 3, bool randomize = false, double gamma = 1, double gamma_cut = none, int type_contribution = 1, double (*weightFun)(double)= &weight_1);
+    HypergraphLeiden(const Hypergraph &graph, int iterations = 3, bool randomize = true, double gamma = 1, double gamma_cut = none, int type_contribution = 1, double (*weightFun)(double)= &weight_1);
 
     void run() override;
 

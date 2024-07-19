@@ -116,7 +116,7 @@ TEST_F(CommunityGTest, testIsaline_Leiden_Louvain) {
     double mod_t = modularityHypergraph.getQualityHypergraph(t, hg, 1);
     EXPECT_LE(mod_t, mod_q);
 
-    HypergraphLeiden pl(hg);
+    HypergraphLeiden pl(hg, 3, false);
     pl.run();
     Partition zeta = pl.getPartition();
     double mod_zeta = modularityHypergraph.getQualityHypergraph(zeta, hg, 1);
@@ -128,10 +128,7 @@ TEST_F(CommunityGTest, testIsaline_Leiden_Louvain) {
     ASSERT_TRUE(zeta[4]==5);
     ASSERT_TRUE(zeta[5]==5);
 
-    HypergraphModeling m(hg,zeta);
-    m.run();
-
-    HypergraphLouvain plouvain(hg);
+    HypergraphLouvain plouvain(hg, 3, false);
     plouvain.run();
     Partition zeta_bis = plouvain.getPartition();
 

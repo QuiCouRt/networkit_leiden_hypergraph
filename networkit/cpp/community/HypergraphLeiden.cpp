@@ -39,7 +39,7 @@ void HypergraphLeiden::run() {
     // communityVolumes_1 corresponds to the volume of our blocks
     // communityVolumes_2 corresponds to the volume of the communities we are building (by greedy move of blocks)
     communityVolumes_2 = communityVolumes_1; // Initialy we have only singleton comm, so communityVolumes_2 = communityVolumes_1
-    //unweighted
+    //for partially unweighted modularity we need unweighted volumes
     communityVolumes_2_unweighted = communityVolumes_1_unweighted;
     
     //For loop to obtain the max size edge
