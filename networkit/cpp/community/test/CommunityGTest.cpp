@@ -50,6 +50,7 @@
 #include <networkit/generators/LFRGenerator.hpp>
 #include <networkit/graph/GraphTools.hpp>
 #include <networkit/graph/Hypergraph.hpp>
+#include <networkit/graph/HypergraphTools.hpp>
 #include <networkit/io/METISGraphReader.hpp>
 #include <networkit/overlap/HashingOverlapper.hpp>
 #include <networkit/scd/LocalTightnessExpansion.hpp>
@@ -60,6 +61,25 @@
 namespace NetworKit {
 
 class CommunityGTest : public testing::Test {};
+
+/*TEST_F(CommunityGTest, testIsaline_Modeling) {
+    const count numEdges = 20;
+
+    Aux::Random::setSeed(42, false);
+
+    auto hGraph = Hypergraph(20, numEdges, true);
+
+    count sampleMost = 15;
+    std::vector<node> mostSample = HypergraphTools::randomEdges(hGraph, sampleMost);
+
+    HypergraphLeiden pl(hGraph);
+    pl.run();
+    Partition zeta = pl.getPartition();
+
+    HypergraphModeling m(hGraph,zeta);
+    m.run();
+}*/
+
 
 TEST_F(CommunityGTest, testIsaline_Leiden_Louvain) {
     // Hypergraph creation : 
