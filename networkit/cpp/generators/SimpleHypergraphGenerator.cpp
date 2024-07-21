@@ -41,7 +41,7 @@ void SimpleHypergraphGenerator::satisfyNodeDegree(Hypergraph &hGraph) {
 
 Hypergraph SimpleHypergraphGenerator::generate() {
     // Initially the hypergraph has isolated nodes and empty hyperedges
-    Hypergraph hGraph = Hypergraph(numNodes, numEdges);
+    Hypergraph hGraph = Hypergraph(numNodes, numEdges, true);
 
     // If the hypergraph should be regular, the node degrees are used as an invariant for the
     // node-to-edge distribution

@@ -33,15 +33,6 @@ void HypergraphLeiden::run() {
     handler.assureRunning();
     Hypergraph *currentGraph = const_cast<Hypergraph*>(HG);
 
-    //Initialization of volumes
-    calculateVolumesHypergraph(*currentGraph);
-
-    // communityVolumes_1 corresponds to the volume of our blocks
-    // communityVolumes_2 corresponds to the volume of the communities we are building (by greedy move of blocks)
-    communityVolumes_2 = communityVolumes_1; // Initialy we have only singleton comm, so communityVolumes_2 = communityVolumes_1
-    //for partially unweighted modularity we need unweighted volumes
-    communityVolumes_2_unweighted = communityVolumes_1_unweighted;
-    
     //For loop to obtain the max size edge
     double s;
     d=0;
@@ -55,6 +46,16 @@ void HypergraphLeiden::run() {
           DEBUG("weights on hyperedges that are set incorrectly, it's correct with ", currentGraph->getEdgeWeight(eid));
         }
     });
+
+    //Initialization of volumes
+    calculateVolumesHypergraph(*currentGraph);
+
+    // communityVolumes_1 corresponds to the volume of our blocks
+    // communityVolumes_2 corresponds to the volume of the communities we are building (by greedy move of blocks)
+    communityVolumes_2 = communityVolumes_1; // Initialy we have only singleton comm, so communityVolumes_2 = communityVolumes_1
+    //for partially unweighted modularity we need unweighted volumes
+    communityVolumes_2_unweighted = communityVolumes_1_unweighted;
+    
 
     // Vector of sum of weight of edges of size i (i=0 to d)
     EdgeSizeWeight.resize(d+1);
@@ -92,6 +93,8 @@ void HypergraphLeiden::run() {
     // Main loop
     // greedy move + refinement phase until there are no more community changes, or we exceed the numberOfIterations
     for (int i = 0; i < numberOfIterations; ++i) {
+      Aux::Log::setLogLevel("DEBUG");
+      INFO("hello"); 
         MoveHypergraph((*currentGraph), zeta);
         refined = RefineHypergraph((*currentGraph), zeta);
         result = refined;
@@ -419,10 +422,10 @@ void HypergraphLeiden::MoveHypergraph(const Hypergraph &graph, const Partition &
 
       // We move the block u into the best community found
       if (exit_best_com){
-      /*Aux::Log::setLogLevel("DEBUG");
+      Aux::Log::setLogLevel("DEBUG");
       INFO("move u: ", u); 
       INFO("delta: ", maxDelta);
-      INFO("for: ", bestCommunity);*/
+      INFO("for: ", bestCommunity);
       if (maxDelta <= 0){
         bestCommunity=current_comm;
       }

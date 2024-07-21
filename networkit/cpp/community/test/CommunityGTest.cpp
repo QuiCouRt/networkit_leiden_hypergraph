@@ -55,6 +55,7 @@
 #include <networkit/overlap/HashingOverlapper.hpp>
 #include <networkit/scd/LocalTightnessExpansion.hpp>
 #include <networkit/structures/Partition.hpp>
+#include <networkit/generators/SimpleHypergraphGenerator.hpp>
 
 #include <tlx/unused.hpp>
 
@@ -62,23 +63,22 @@ namespace NetworKit {
 
 class CommunityGTest : public testing::Test {};
 
-/*TEST_F(CommunityGTest, testIsaline_Modeling) {
+TEST_F(CommunityGTest, testIsaline_Modeling) {
     const count numEdges = 20;
+    const count numNodes = 20;
+    const count maxEdgeOrder=4;
 
-    Aux::Random::setSeed(42, false);
+    SimpleHypergraphGenerator g(numNodes, numEdges, maxEdgeOrder,false,2.4);
+    Hypergraph hg(20,20,true);
+    hg = g.generate();
 
-    auto hGraph = Hypergraph(20, numEdges, true);
-
-    count sampleMost = 15;
-    std::vector<node> mostSample = HypergraphTools::randomEdges(hGraph, sampleMost);
-
-    HypergraphLeiden pl(hGraph);
+    HypergraphLeiden pl(hg,10,true,0.5,none,1);
     pl.run();
     Partition zeta = pl.getPartition();
 
-    HypergraphModeling m(hGraph,zeta);
+    HypergraphModeling m(hg,zeta);
     m.run();
-}*/
+}
 
 
 TEST_F(CommunityGTest, testIsaline_Leiden_Louvain) {
