@@ -93,8 +93,6 @@ void HypergraphLeiden::run() {
     // Main loop
     // greedy move + refinement phase until there are no more community changes, or we exceed the numberOfIterations
     for (int i = 0; i < numberOfIterations; ++i) {
-      Aux::Log::setLogLevel("DEBUG");
-      INFO("hello"); 
         MoveHypergraph((*currentGraph), zeta);
         refined = RefineHypergraph((*currentGraph), zeta);
         result = refined;
@@ -422,10 +420,10 @@ void HypergraphLeiden::MoveHypergraph(const Hypergraph &graph, const Partition &
 
       // We move the block u into the best community found
       if (exit_best_com){
-      Aux::Log::setLogLevel("DEBUG");
+      /*Aux::Log::setLogLevel("DEBUG");
       INFO("move u: ", u); 
       INFO("delta: ", maxDelta);
-      INFO("for: ", bestCommunity);
+      INFO("for: ", bestCommunity);*/
       if (maxDelta <= 0){
         bestCommunity=current_comm;
       }
@@ -454,7 +452,7 @@ void HypergraphLeiden::MoveHypergraph(const Hypergraph &graph, const Partition &
         index target_comm = result[no];
         if (target_comm != bestCommunity &&  neighborCommunity !=u) {
           if (!inQueue[neighborCommunity]) {
-            INFO("  ", neighborCommunity);
+            //INFO("  ", neighborCommunity);
             newNodes.push_back(neighborCommunity);
             inQueue[neighborCommunity] = true;
             if (newNodes.size() == WORKING_SIZE) {

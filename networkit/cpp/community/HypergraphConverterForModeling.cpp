@@ -13,8 +13,6 @@ namespace NetworKit {
 
 HypergraphModeling::HypergraphModeling(const Hypergraph &graph, const Partition &zeta)
     : CommunityDetectionAlgorithm(graph), zeta(zeta) {
-    this->result = Partition(graph.numberOfNodes());
-    this->result.allToSingletons();
 }
 
 void HypergraphModeling::run() {
@@ -28,7 +26,6 @@ void HypergraphModeling::run() {
         DEBUG("Unable to open file for writing!");
     else
     {
-    //fprintf (f, "%d", currentGraph->numEdges);
     (*currentGraph).forEdges([&](edgeid eid, edgeweight ew) {
         for (node nid: (*currentGraph).getEdgeIncidence(eid)){
             fprintf (f, "%ld ", nid);
@@ -36,8 +33,6 @@ void HypergraphModeling::run() {
         fprintf (f, "\n");
     });
     fclose (f);
-
-    hasRun = true;
     }
 
     FILE * p;
@@ -46,15 +41,13 @@ void HypergraphModeling::run() {
         DEBUG("Unable to open file for writing!");
     else
     {
-    //fprintf (f, "%d", currentGraph->numEdges);
     (*currentGraph).forNodes([&](node nid, nodeweight nw) {
       fprintf (p, "%ld\n", zeta[nid]); 
     });
-
     fclose (p);
+    }
 
     hasRun = true;
-    }
 }
 
 

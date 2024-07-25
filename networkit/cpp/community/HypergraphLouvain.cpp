@@ -32,15 +32,6 @@ void HypergraphLouvain::run() {
 
     handler.assureRunning();
     Hypergraph *currentGraph = const_cast<Hypergraph*>(HG);
-
-    //Initialization of volumes
-    calculateVolumesHypergraph(*currentGraph);
-
-    // communityVolumes_1 corresponds to the volume of our blocks
-    // communityVolumes_2 corresponds to the volume of the communities we are building (by greedy move of blocks)
-    communityVolumes_2 = communityVolumes_1; // Initialy we have only singleton comm, so communityVolumes_2 = communityVolumes_1
-    //unweighted
-    communityVolumes_2_unweighted = communityVolumes_1_unweighted;
     
     //For loop to obtain the max size edge
     double s;
@@ -55,6 +46,15 @@ void HypergraphLouvain::run() {
           DEBUG("weights on hyperedges that are set incorrectly, it's correct with ", currentGraph->getEdgeWeight(eid));
         }
     });
+
+    //Initialization of volumes
+    calculateVolumesHypergraph(*currentGraph);
+
+    // communityVolumes_1 corresponds to the volume of our blocks
+    // communityVolumes_2 corresponds to the volume of the communities we are building (by greedy move of blocks)
+    communityVolumes_2 = communityVolumes_1; // Initialy we have only singleton comm, so communityVolumes_2 = communityVolumes_1
+    //unweighted
+    communityVolumes_2_unweighted = communityVolumes_1_unweighted;
 
     // Vector of sum of weight of edges of size i (i=0 to d)
     EdgeSizeWeight.resize(d+1);

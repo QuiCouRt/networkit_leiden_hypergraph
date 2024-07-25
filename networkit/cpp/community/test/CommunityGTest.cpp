@@ -5,6 +5,8 @@
  *      Author: cls
  */
 
+#include <fstream>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <networkit/auxiliary/Log.hpp>
@@ -64,20 +66,63 @@ namespace NetworKit {
 class CommunityGTest : public testing::Test {};
 
 TEST_F(CommunityGTest, testIsaline_Modeling) {
-    const count numEdges = 20;
-    const count numNodes = 20;
-    const count maxEdgeOrder=4;
+    const count numEdges = 100;
+    const count numNodes = 100;
+    const count maxEdgeOrder=5;
 
-    SimpleHypergraphGenerator g(numNodes, numEdges, maxEdgeOrder,false,2.4);
-    Hypergraph hg(20,20,true);
+    SimpleHypergraphGenerator g(numNodes, numEdges, maxEdgeOrder,false,2.5);
+    Hypergraph hg(0,0,true);
     hg = g.generate();
 
-    HypergraphLeiden pl(hg,10,true,0.5,none,1);
+    HypergraphLeiden pl(hg,10,true,1,none,1);
     pl.run();
     Partition zeta = pl.getPartition();
 
+    ModularityHypergraph modularityHypergraph;
+    double mod_leiden = modularityHypergraph.getQualityHypergraph(zeta, hg, 1, 1);
+
     HypergraphModeling m(hg,zeta);
     m.run();
+}
+
+TEST_F(CommunityGTest, testIsaline_Compare_Louvain_Leiden) {
+    const count numEdges = 100;
+    const count numNodes = 100;
+    const count maxEdgeOrder=5;
+    double type_contribution =1;
+
+    FILE * f;
+    f = fopen ("output/ResultLeiden.txt", "wt");
+    FILE * flouvain;
+    flouvain = fopen ("output/ResultLouvain.txt", "wt");
+
+    if (f == NULL || flouvain == NULL){
+        DEBUG("Unable to open file for writing!");
+    }
+    else {
+        for (int i =0; i<20; i++){
+            SimpleHypergraphGenerator g(numNodes, numEdges, maxEdgeOrder,false,2.5);
+            Hypergraph hg(0,0,true);
+            hg = g.generate();
+
+            HypergraphLeiden pl(hg,10,true,1,none,type_contribution);
+            pl.run();
+            Partition zeta = pl.getPartition();
+
+            HypergraphLouvain plouvain(hg,10,true,1,type_contribution);
+            plouvain.run();
+            Partition zeta_louvain = plouvain.getPartition();
+
+            ModularityHypergraph modularityHypergraph;
+            double mod_leiden = modularityHypergraph.getQualityHypergraph(zeta, hg, 1, type_contribution);
+            double mod_louvain = modularityHypergraph.getQualityHypergraph(zeta_louvain, hg, 1, type_contribution);
+    
+            fprintf (f, "%f, ",mod_leiden);
+            fprintf (flouvain, "%f, ",mod_louvain);
+        }
+        fclose (f);
+        fclose (flouvain);
+    }
 }
 
 
@@ -211,10 +256,10 @@ TEST_F(CommunityGTest, testIsaline_Modularity_Hypergraph) {
     double mod_prime_0 = modularityHypergraph.getQualityHypergraph(q, hg, 1.0, 0);
     ASSERT_TRUE(mod_prime_0 == mod_0 + gain_0);
     double mod_prime_11 = modularityHypergraph.getQualityHypergraph(q, hg, 1.0, 11);
-    EXPECT_LE(mod_prime_11 - 0.0000000000000001, mod_11 + gain_11);
+    EXPECT_LE(mod_prime_11 - 0.0000000000000001, mod_11 + gain_11); //C++ double should have a floating-point precision of up to 15 digits
     EXPECT_GE(mod_prime_11 + 0.0000000000000001, mod_11 + gain_11);
     double mod_prime_10 = modularityHypergraph.getQualityHypergraph(q, hg, 1.0, 10);
-    EXPECT_LE(mod_prime_10 - 0.0000000000000001, mod_10 + gain_10);
+    EXPECT_LE(mod_prime_10 - 0.0000000000000001, mod_10 + gain_10); //C++ double should have a floating-point precision of up to 15 digits
     EXPECT_GE(mod_prime_10 + 0.0000000000000001, mod_10 + gain_10);
 }
 
