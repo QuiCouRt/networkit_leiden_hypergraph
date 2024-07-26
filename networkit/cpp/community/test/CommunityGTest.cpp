@@ -86,8 +86,8 @@ TEST_F(CommunityGTest, testIsaline_Modeling) {
 }
 
 TEST_F(CommunityGTest, testIsaline_Compare_Louvain_Leiden) {
-    const count numEdges = 100;
-    const count numNodes = 100;
+    const count numEdges = 1000;
+    const count numNodes = 2740;
     const count maxEdgeOrder=5;
     double type_contribution =1;
 
@@ -100,8 +100,8 @@ TEST_F(CommunityGTest, testIsaline_Compare_Louvain_Leiden) {
         DEBUG("Unable to open file for writing!");
     }
     else {
-        for (int i =0; i<20; i++){
-            SimpleHypergraphGenerator g(numNodes, numEdges, maxEdgeOrder,false,2.5);
+        for (int i =0; i<10; i++){
+            SimpleHypergraphGenerator g(numNodes, numEdges, maxEdgeOrder,false,none);
             Hypergraph hg(0,0,true);
             hg = g.generate();
 
