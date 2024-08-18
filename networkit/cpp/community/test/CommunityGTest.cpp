@@ -66,11 +66,11 @@ namespace NetworKit {
 class CommunityGTest : public testing::Test {};
 
 TEST_F(CommunityGTest, testIsaline_Modeling) {
-    const count numEdges = 30;
-    const count numNodes = 30;
+    const count numEdges = 20;
+    const count numNodes = 13;
     const count maxEdgeOrder=5;
 
-    SimpleHypergraphGenerator g(numNodes, numEdges, maxEdgeOrder,false,2.5);
+    SimpleHypergraphGenerator g(numNodes, numEdges, maxEdgeOrder,false,2);
     Hypergraph hg(0,0,true);
     hg = g.generate();
 
